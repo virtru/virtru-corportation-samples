@@ -1,0 +1,11 @@
+# Web app
+ui/dist
+ui/node_modules
+# loaded in docker-compose or runtime variables
+ui/.env
+
+# Development
+db-data/
+
+# Sensitive
+config.yaml

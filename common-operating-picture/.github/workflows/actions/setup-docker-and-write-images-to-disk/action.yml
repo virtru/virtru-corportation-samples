@@ -1,0 +1,30 @@
+name: 🐳 Docker Build and Push
+description: 'Setup QEMU, Docker, buildx, GHCR, push container image'
+
+inputs:
+  PERSONAL_ACCESS_TOKEN:  # id of input
+    description: 'Secret PAT (handle with care)'
+
+runs:
+  using: 'composite'
+
+  steps:
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: virtru-cloudnative
+        password: ${{ inputs.PERSONAL_ACCESS_TOKEN }}
+
+    - name: 🏗️ Build and Push
+      uses: docker/build-push-action@v6
+      with:
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: dsp-cop/dsp-cop-web-server:latest

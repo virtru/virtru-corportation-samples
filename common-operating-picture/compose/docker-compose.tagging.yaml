@@ -1,0 +1,34 @@
+services:
+
+  dsp:
+    extends:
+      file: docker-compose.dsp.yaml
+      service: dsp
+
+  tagging:
+    image: ${TAGGING_IMAGE}
+    restart: on-failure
+# Not sure why the below works sometimes and not others...esp with a secondary docker compose up after initial start
+#    depends_on:
+#      dsp:
+#        condition: service_healthy
+#        restart: true
+
+    ports:
+      - "9001:8080"
+    environment:
+      - TAGGINGPDP_CONFIG_PATH=/tagging-pdp/config/tagging_config.yaml
+      - TAGGINGPDP_LOG_LEVEL=TRACE
+      - TAGGINGPDP_ROOT_LOG_LEVEL=WARN
+      - TAGGINGPDP_ENCRYPTED_TOKEN_KEY=${ENCRYPTED_TOKEN_KEY}
+      - TAGGINGPDP_PLATFORM_ENDPOINT=${PLATFORM_ENDPOINT}
+      - TAGGINGPDP_OIDC_TOKEN_ENDPOINT=${TOKEN_ENDPOINT}
+      - TAGGINGPDP_PLATFORM_AUTH_CLIENT_ID=opentdf
+      - TAGGINGPDP_PLATFORM_AUTH_CLIENT_SECRET=secret
+      - TAGGINGPDP_ADDITIONAL_TRUSTED_CERT_DIR=/tagging-pdp/truststore
+      - TAGGINGPDP_AUTH_ENABLED=false
+    volumes:
+      - ../sample.tagging.yaml/:/tagging-pdp/config/tagging_config.yaml
+      - ../truststore:/tagging-pdp/truststore # mounts truststore
+    extra_hosts:
+      - "local-dsp.virtru.com:172.17.0.1" #host and ip

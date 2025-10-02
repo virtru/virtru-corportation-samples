@@ -1,0 +1,4 @@
+name: dspcop-helm
+description: A Helm Chart to deploy COP
+version: 0.1.0
+apiVersion: v2

@@ -1,0 +1,178 @@
+syntax = "proto3";
+
+package tdf_object.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+option go_package = "github.com/virtru-corp/dsp-cop/api/proto/tdf_object/v1;tdf_objectv1";
+
+enum StreamEventType {
+  STREAM_EVENT_TYPE_UNSPECIFIED = 0;
+
+  // system events
+  STREAM_EVENT_TYPE_STARTUP = 1;
+  STREAM_EVENT_TYPE_SHUTDOWN = 2;
+  STREAM_EVENT_TYPE_RESTART = 3;
+  STREAM_EVENT_TYPE_MAINTENANCE = 4;
+
+  // data events
+  STREAM_EVENT_TYPE_CONNECTED = 5;
+  STREAM_EVENT_TYPE_HEARTBEAT = 6;
+
+  // generic events
+  STREAM_EVENT_TYPE_GENERIC_ERROR = 10;
+  STREAM_EVENT_TYPE_SERVER_ERROR = 11;
+  STREAM_EVENT_TYPE_DATA_ERROR = 12;
+
+  // tdf_objects stream events
+  STREAM_EVENT_TYPE_TDF_OBJECTS_NEW = 20;
+}
+
+message TdfObject {
+  string id = 1;
+  google.protobuf.Timestamp ts = 2;
+  // source type of data (MARS? what else?)
+  string src_type = 3;
+  // geospatial data of location of data
+  // TODO consider using google.protobuf.Struct or geobuf https://github.com/murphy214/geobuf
+  string geo = 4;
+  // plaintext json search index
+  string search = 5;
+  // tdf bytes
+  bytes tdf_blob = 6;
+  // tdf data uri
+  string tdf_uri = 7;
+}
+
+message SrcTypeUiSchemaFieldConfig {
+  string placeholder = 1;
+  string widget = 2;
+  bool multiple = 3;
+}
+
+message SrcTypeUiSchema {
+  repeated string order = 1;
+  map<string, SrcTypeUiSchemaFieldConfig> field_config = 2;
+}
+
+message SrcTypeMetadataDisplayFields {
+  string header = 1;
+  repeated string details = 2;
+}
+
+message SrcTypeMetadataMapFieldConfig {
+  string field = 1;
+  map<string, string> valueMap = 2;
+}
+
+message SrcTypeMetadataMapFields {
+  string iconDefault = 1;
+  repeated SrcTypeMetadataMapFieldConfig iconConfig = 2;
+  string colorDefault = 3;
+  repeated SrcTypeMetadataMapFieldConfig colorConfig = 4;
+}
+
+message SrcTypeMetadata {
+  string geo_field = 1;
+  repeated string search_fields = 2;
+  repeated string attr_fields = 3;
+  string ts_field = 4;
+  SrcTypeMetadataDisplayFields display_fields = 5;
+  SrcTypeMetadataMapFields map_fields = 6;
+}
+
+message SrcType {
+  string id = 1;
+  google.protobuf.Struct form_schema = 2;
+  SrcTypeUiSchema ui_schema = 3;
+  SrcTypeMetadata metadata = 4;
+}
+
+message TimestampSelector {
+  google.protobuf.Timestamp greater_or_equal_to = 1 [(buf.validate.field).required = true];
+  google.protobuf.Timestamp lesser_or_equal_to = 2;
+}
+
+message CreateTdfObjectRequest {
+  // source type of data (MARS? what else?)
+  string src_type = 1 [(buf.validate.field).required = true];
+  // geospatial data of location of data
+  string geo = 2;
+  // plaintext json search index
+  string search = 3;
+  // tdf bytes
+  bytes tdf_blob = 4;
+  // tdf data uri
+  string tdf_uri = 5;
+  // timestamp of data
+  google.protobuf.Timestamp ts = 6;
+}
+
+message CreateTdfObjectResponse {
+  string id = 1;
+}
+
+message GetTdfObjectRequest {
+  string id = 1 [(buf.validate.field).required = true];
+}
+
+message GetTdfObjectResponse {
+  TdfObject tdf_object = 1;
+}
+
+message QueryTdfObjectsRequest {
+  TimestampSelector ts_range = 1 [(buf.validate.field).required = true];
+  string src_type = 2 [(buf.validate.field).required = true];
+  string geo_location = 3;
+  string search = 4;
+}
+
+message QueryTdfObjectsResponse {
+  repeated TdfObject tdf_objects = 1;
+}
+
+message StreamTdfObjectsRequest {
+  // todo: intentionally left empty until we decide if any filtering needs to be done
+}
+
+message StreamTdfObjectsResponse {
+  StreamEventType event_type = 1;
+  string event_detail = 2;
+  reserved 3, 4, 5;
+
+  repeated TdfObject tdf_objects = 6;
+}
+
+message ListSrcTypesRequest {
+}
+
+message ListSrcTypesResponse {
+  repeated string src_types = 1;
+}
+
+message GetSrcTypeRequest {
+  string src_type = 1 [(buf.validate.field).required = true];
+}
+
+message GetSrcTypeResponse {
+  SrcType src_type = 1;
+}
+
+message GetEntitlementsRequest {
+}
+
+message GetEntitlementsResponse {
+  map<string, bool> entitlements = 1;
+}
+
+service TdfObjectService {
+  rpc CreateTdfObject(CreateTdfObjectRequest) returns (CreateTdfObjectResponse) {}
+  rpc GetTdfObject(GetTdfObjectRequest) returns (GetTdfObjectResponse) {}
+  rpc QueryTdfObjects(QueryTdfObjectsRequest) returns (QueryTdfObjectsResponse) {}
+  rpc StreamTdfObjects(StreamTdfObjectsRequest) returns (stream StreamTdfObjectsResponse) {}
+  rpc GetSrcType(GetSrcTypeRequest) returns (GetSrcTypeResponse) {}
+  rpc ListSrcTypes(ListSrcTypesRequest) returns (ListSrcTypesResponse) {}
+  rpc GetEntitlements(GetEntitlementsRequest) returns (GetEntitlementsResponse) {}
+}

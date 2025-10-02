@@ -1,0 +1,37 @@
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  annotations:
+    route.openshift.io/termination: {{ if .Values.cop.config.service.tls.enabled }}passthrough{{ else }}edge{{ end }}
+  name: cop
+  labels:
+    app.kubernetes.io/instance: cop
+  namespace: {{ .Values.namespace }}
+spec:
+  tls:
+  - secretName: {{ .Values.dsp_cert_secret }}
+    hosts:
+      - {{ .Values.cop_host }}
+  rules:
+    - host: {{ .Values.cop_host }}
+      http:
+        paths:
+          - pathType: ImplementationSpecific
+            backend:
+              service:
+                name: cop
+                port:
+                  number: 5001
+    - host: {{ .Values.grpc_host }}
+      http:
+        paths:
+          - pathType: ImplementationSpecific
+            backend:
+              service:
+                name: cop
+                port:
+                  number: 5002             
+status:
+  loadBalancer:
+    ingress:
+      - hostname: router-default.{{ .Values.domain }}

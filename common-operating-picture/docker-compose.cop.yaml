@@ -1,0 +1,26 @@
+name: dspcop
+
+services:
+#================================================================
+# Start the COP web server (go process + react app)
+#----------------------------------------------------------------
+  cop-web-server:
+    extends:
+      file: ./compose/docker-compose.cop-web-server.yaml
+      service: cop-web-server
+
+#================================================================
+# Start the COP database
+#----------------------------------------------------------------
+  cop-db:
+    extends:
+      file: ./compose/docker-compose.cop-db.yaml
+      service: cop-db  
+
+#================================================================
+# Setup the COP database
+#----------------------------------------------------------------
+  cop-db-setup:
+    extends:
+      file: ./compose/docker-compose.cop-db.yaml
+      service: cop-db-setup

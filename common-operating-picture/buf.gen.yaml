@@ -1,0 +1,18 @@
+version: v1
+plugins:
+  - plugin: go
+    out: ./api/proto
+    opt: paths=source_relative
+  - plugin: connect-go
+    out: ./api/proto
+    opt: paths=source_relative
+  - plugin: es
+    out: ./ui/src/proto
+    opt:
+      - target=ts
+      - import_extension=none
+  - plugin: connect-es
+    out: ./ui/src/proto
+    opt:
+      - target=ts
+      - import_extension=none

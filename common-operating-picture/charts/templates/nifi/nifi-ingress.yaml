@@ -1,0 +1,33 @@
+{{ if .Values.nifi.enabled }}
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  annotations:
+    route.openshift.io/termination: {{ if .Values.nifi.config.service.tls.enabled }}passthrough{{ else }}edge{{ end }}
+    # haproxy.router.openshift.io/rewrite-target: /nifi
+  name: cop-nifi
+  labels:
+    app: nifi
+  namespace: {{ .Values.namespace }}
+spec:
+  {{ if .Values.nifi.config.service.tls.enabled }}
+  tls:
+  - secretName: {{ .Values.dsp_cert_secret }}
+    hosts:
+      - {{ .Values.nifi.host }}
+  {{ end }}  
+  rules:
+    - host: {{ .Values.nifi.host }}
+      http:
+        paths:
+          - pathType: ImplementationSpecific
+            backend:
+              service:
+                name: cop-nifi
+                port:
+                  number: {{ if .Values.nifi.config.service.tls.enabled }}443{{ else }}80{{ end }}
+status:
+  loadBalancer:
+    ingress:
+      - hostname: router-default.{{ .Values.domain }}
+{{ end }}

@@ -1,0 +1,149 @@
+############################################
+# BEGIN required inputs
+############################################
+
+namespace: virtru
+domain: example.com
+
+platform_host: &platform_host platform.example.com
+platform_url: &platform_url https://platform.example.com
+
+tagging_pdp_host: &tagging_pdp_host tagging-pdp.example.com
+
+# NOTE: MIC-2028 removed nifi as it is considered out of scope for dsp-cop
+# nifi_host: &nifi_host nifi.example.com
+
+kas_endpoint: &kas_endpoint https://platform.example.com/kas
+deprecated_kas_endpoint: &deprecated_kas_endpoint https://keycloak.example.com/kas ## Not currently in use
+
+idp_endpoint: &idp_endpoint https://platform.example.com/realms/opentdf 
+depracated_idp_endpoint: &depracated_idp_endpoint https://keycloak.example.com/realms/opentdf ## Uncertain which IdP endpoint should be used, but this one seems promising
+
+## Unlikely to need to change
+cop_db_service_name: &cop_db_service_name cop-db
+cop_db_url: &cop_db_url postgres://postgres:postgres@cop-db:15432/postgres
+
+cop_host: cop.example.com
+cop_url: &cop_url https://cop.example.com
+
+grpc_host: cop-api.example.com
+grpc_server: &grpc_server https://cop-api.example.com
+
+# NOTE: MIC-2028 removed nifi as it is considered out of scope for dsp-cop
+# deploy_nifi: &deploy_nifi false
+# enable_nifi_tls: &enable_nifi_tls false
+
+enable_tls_for_go_server: &enable_tls_for_go_server false ## Should remain false, as TLS passthrough may not be available for the forseeable future.
+dsp_cert_secret: platform.example.com-tls ## DSP needs to be deployed first, with a multi-SAN x509 stored in this secret that can be reused for COP
+
+# Container images
+# NOTE: MIC-2028 removed nifi as it is considered out of scope for dsp-cop
+# image_nifi: &image_nifi
+#   name: nifi-1.25.0-jre17
+#   tag: latest
+#   repo: ghcr.io/ttschampel/nifi
+image_db: &image_db
+  name: postgis
+  tag: 16-3.5
+  repo: postgis
+image_cop: &image_cop
+  name: cop-web-server
+  tag: latest
+  repo: ghcr.io/virtru-corp/dsp-cop
+
+############################################
+# END required inputs
+############################################
+
+# NOTE: MIC-2028 removed nifi as it is considered out of scope for dsp-cop
+# nifi:
+#   enabled: *deploy_nifi
+#   image: *image_nifi
+#   host: *nifi_host
+#   config:
+#     service:
+#       tls:
+#         enabled: *enable_nifi_tls
+#     env: 
+#       TDF_FLOW_TAGGING_AUTH: "false"
+#       TDF_FLOW_TAGGING_USE_SSL: "true"
+#       TAGGING_PDP_ENDPOINT: *tagging_pdp_host
+#       TDFDB_DATABASE_HOST: *cop_db_service_name
+#       TDFDB_DATABASE_USERNAME: postgres
+#       TDFDB_DATABASE_PASSWORD: postgres
+#       TDFDB_DATABASE_CATALOG_NAME: postgres
+#       TDFDB_DATABASE_SCHEMA_NAME: public
+#       TDFDB_DATABASE_NAME: postgres
+#       TDFDB_DATABASE_TABLE: tdf_objects
+#       TDF_FLOW_PLATFORM_ENDPOINT: *platform_host
+#       TDF_FLOW_NANO_KAS_URL: *kas_endpoint
+#       TDF_FLOW_TDF_KAS_URL: *kas_endpoint
+#       TDF_FLOW_CLIENT_ID: opentdf
+#       TDF_FLOW_CLIENT_SECRET: secret
+#       TDF_TRUSTSTORE_FILENAME: /opt/nifi/nifi-current/truststore/ca.jks
+
+db:
+  image: *image_db
+   
+cop:
+  image: *image_cop
+
+  config:
+    ############################################
+    # Required by COP
+    ############################################
+
+    db_url: *cop_db_url
+    platform_endpoint: *platform_url
+
+    ## Used to identify the OIDC client for the server which uses the client credentials flow
+    oidc_client_id_for_server: opentdf
+    oidc_client_secret_for_server: secret
+
+    ## Used to identify the OIDC client for the Web UI which uses the password flow
+    oidc_client_id_for_web_password_flow: dsp-cop-client
+
+    ## Used to identify KAS URL in the Web UI will be replaced by DSP well-known endpoint
+    deprecated_kas_url: *kas_endpoint
+
+    ## Used to connect to the IdP within the Web UI will be replaced by DSP well-known endpoint
+    deprecated_idp_url: *depracated_idp_endpoint
+
+    ############################################
+    # Optional COP configurations
+    ############################################
+
+    log_level: DEBUG ## Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
+
+    service:
+      ## The hostname to listen on
+      hostname: *cop_url
+      public_server_host: *grpc_server
+      public_static_host: *cop_url
+
+      ## gRPC config
+      grpc_port: "5002"
+      # grpc_write_timeout: 60
+      # grpc_read_timeout: 60
+
+      ## Static config
+      static_port: "5001"
+      # static_write_timeout: 60
+      # static_read_timeout: 60
+
+      ## CORS config
+      ## This should be set to the origin of the web UI
+      cors_origin: *cop_url # Allow all origins for development
+
+      ## NOTE: Your Platform configuration will need server.cors.enabled: true and server.cors.allowedorigins to include the cors_origin value above (plus one for the gRPC server if it uses a different subdomain)
+
+      tls:
+        enabled: *enable_tls_for_go_server
+        cert_file: /app/dsp-keys/tls.crt
+        key_file: /app/dsp-keys/tls.key
+    ui:
+      ## Tile server URL for the map
+      # tile_server_url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
+
+      ## Override TDF3/ZTDF default and encrypt submitted forms as NanoTDFs
+      form_submit_nano_tdf: false

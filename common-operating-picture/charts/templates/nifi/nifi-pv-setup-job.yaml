@@ -1,0 +1,60 @@
+{{ if .Values.rundbjob }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nifi-setup-job
+spec:
+  template:
+    metadata:
+      labels:
+        app: nifi-setup-job
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        # - args:
+        #     - bash
+        #     - -c
+        #     - |2
+        #        \
+        #         echo \"Starting COP DB setup...\" \
+        #         && echo \"Setting up PostGIS and the DB schema...\" \
+        #         && psql -h cop-db -p 15432 -U postgres -d postgres -f /scripts/schema.sql \
+        #         && echo \"Database setup complete.\" \
+          #env:
+            # - name: PGPASSWORD
+            #   value: postgres
+            # - name: PGUSER
+            #   value: postgres
+          #! FIXME: example value
+          image: us-east4-docker.pkg.dev/prj-sb-engineering-nerq/ben-test/nifi-init-job:latest
+          name: nifi-setup-job
+
+      # - ../nifi/extensions:/opt/nifi/nifi-current/extensions #mount custom NARs
+      # - ../truststore:/opt/nifi/nifi-current/truststore # mounts truststore
+      # - ../nifi/custom-libs:/opt/nifi/nifi-current/custom-libs #mount additional libs
+      # - ../nifi/sample_data:/opt/nifi/nifi-current/sample_data #mount sample data
+          volumeMounts:
+            # - mountPath: /scripts
+            #   name: nifi-setup-pv
+            - mountPath: /opt/nifi/nifi-current/extensions
+              name: nifi-pv
+            - mountPath: /opt/nifi/nifi-current/truststore
+              name: nifi-pv
+            - mountPath: /opt/nifi/nifi-current/custom-libs
+              name: nifi-pv
+            - mountPath: /opt/nifi/nifi-current/sample_data
+              name: nifi-pv
+      volumes:
+        - name: nifi-pv
+          persistentVolumeClaim: 
+            name: nifi-pv
+            items:
+              - key: schema.sql
+                path: schema.sql
+        # - name: nifi-setup-pv
+        #   hostPath: 
+        #     name: nifi-setup-pv
+        #     items:
+        #       - key: schema.sql
+        #         path: schema.sql
+{{ end }}

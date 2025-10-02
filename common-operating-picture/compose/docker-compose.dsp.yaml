@@ -1,0 +1,127 @@
+services:
+
+  keycloak:
+    extends:
+      file: docker-compose.keycloak.yaml
+      service: keycloak
+
+#================================================================
+# Start the DSP database
+#----------------------------------------------------------------
+  dsp-db:
+    image: postgres
+    restart: always
+    user: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: changeme
+      POSTGRES_DB: opentdf
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - 35433:5432
+
+#================================================================
+# Provisioning Keycloak with expected realm, clients, and users 
+#----------------------------------------------------------------
+  dsp-keycloak-provisioning:
+    build:
+      context: ../
+      dockerfile: ./dev.dsp.Dockerfile
+    command:
+      [
+        'tructl',
+        'provision',
+        'keycloak-from-config',
+        '-e',
+        'https://local-dsp.virtru.com:8443/auth',
+      ]
+    depends_on:
+      keycloak:
+        condition: service_healthy
+        restart: true
+    network_mode: host
+
+#================================================================
+# Start the DSP service
+#----------------------------------------------------------------
+  dsp:
+    build:
+      context: ../
+      dockerfile: ./dev.dsp.Dockerfile
+    command: ['start']
+    ports:
+      - '8080:8080'
+    volumes:
+      - ../dsp-keys:/dsp-keys
+    restart: always
+    depends_on:
+      keycloak:
+        condition: service_healthy
+        restart: true
+      dsp-keycloak-provisioning:
+        condition: service_completed_successfully
+        restart: true
+      dsp-db:
+        condition: service_healthy
+        restart: true
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'wget --spider --no-check-certificate https://local-dsp.virtru.com:8080/healthz || exit 1',
+        ]
+      interval: 60s
+      timeout: 10s
+      retries: 10
+      start_period: 10s
+    environment:
+      DSP_DB_HOST: local-dsp.virtru.com
+      DSP_DB_PORT: 35433
+      DSP_DB_USER: postgres
+      DSP_DB_PASSWORD: changeme
+    # Required for DSP to communicate with Keycloak with OIDC
+    network_mode: host
+
+#================================================================
+# Provision the DSP with DSP COP federal policy
+#----------------------------------------------------------------
+  dsp-provision-federal-policy:
+    build:
+      context: ../
+      dockerfile: ./dev.dsp.Dockerfile
+    command: [
+        'tructl',
+        'provision',
+        'policy',
+        '-f',
+        './samples/defaults/federal_policy.yaml',
+        # authenticate with the 'opentdf' client provisioned to keycloak above
+        '--with-client-creds',
+        '{"clientId":"opentdf","clientSecret":"secret"}',
+        '--host',
+        'https://local-dsp.virtru.com:8080',
+      ]
+    network_mode: host
+    depends_on:
+      dsp:
+        condition: service_healthy
+  
+  dsp-cli-user:
+    build:
+      context: ../
+      dockerfile: ./dev.dsp.Dockerfile
+    # An entrypoint for the packaged DSP container, which waits online for developers to 
+    # connect to it using a shell. This is useful for debugging and running commands in the
+    # development network.
+    #
+    # This can be accessed with 'make launch-dsp-shell', as documented in the README.md
+    entrypoint: ["/bin/sh", "-c", "while true; do sleep 1000; done"]
+    network_mode: host
+    restart: "always"
+    depends_on:
+      dsp:
+        condition: service_healthy        

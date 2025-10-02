@@ -1,0 +1,50 @@
+services:
+#================================================================
+# Start the COP database
+#----------------------------------------------------------------
+  cop-db:
+    # Use community-maintained images compatible with arm64 docker runtime architecture [https://github.com/postgis/docker-postgis/issues/371]
+    # https://github.com/ImreSamu/docker-postgis#debian---bookworm--recommended
+    # Switching the docker runtime to x86_64 arch will break the Keycloak image, which stopped supporting that architecture in version 20.
+    image: imresamu/postgis:16-3.4
+    user: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: changeme
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    ports:
+      - 15433:5432
+
+#================================================================
+# Setup the COP database
+#----------------------------------------------------------------
+  cop-db-setup:
+    # Use community-maintained images compatible with arm64 docker runtime architecture [https://github.com/postgis/docker-postgis/issues/371]
+    # https://github.com/ImreSamu/docker-postgis#debian---bookworm--recommended
+    # Switching the docker runtime to x86_64 arch will break the Keycloak image, which stopped supporting that architecture in version 20.
+    image: imresamu/postgis:16-3.4
+    user: postgres
+    command: |
+      bash -c ' \
+        echo \"Starting COP DB setup...\" \
+        && echo \"Setting up PostGIS and the DB schema...\" \
+        && psql -h cop-db -U postgres -d postgres -f /scripts/schema.sql \
+        && echo \"Setting up Source Types seed data...\" \
+        && psql -h cop-db -U postgres -d postgres -f /scripts/seed.sql \
+        && echo \"Database setup complete.\" \
+      '
+    environment:
+      - PGPASSWORD=changeme
+    volumes:
+      - ../db/schema.sql:/scripts/schema.sql
+      - ../db/seed.sql:/scripts/seed.sql
+    depends_on:
+      cop-db: 
+        condition: service_healthy

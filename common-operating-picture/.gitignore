@@ -1,0 +1,15 @@
+# Local development
+db-data
+dsp.yaml
+dsp-keys
+
+# Binary
+dsp-cop
+
+# Sensitive or environment-specific configuration
+config.yaml
+config.docker.yaml
+
+# Nifi
+**/truststore
+

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: cop-nifi
+  name: cop-nifi-pv
+spec:
+  storageClassName: standard-csi
+  accessModes:
+  - ReadWriteOnce # May need to be ReadWriteMany if NiFi scales horizontally
+  resources:
+    requests:
+      storage: 10Gi
+  # volumeMode: Filesystem
