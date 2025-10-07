@@ -1,0 +1,100 @@
+################################################################################
+#
+# Data Security Platform (DSP) Common Operating Picture (COP) Docker Compose
+# 
+# This file is used to define the services that make up the DSP COP application.
+################################################################################
+
+### Exposed Ports ###
+# 15432:5432 - COP database
+# 8888:8888 - Keycloak HTTP
+# 8443:8443 - Keycloak HTTPS
+# 25434:5432 - Keycloak database
+# 35433:5432 - DSP database
+# 8080:8080 - DSP services
+# 18080:8080 - NiFi
+
+name: virtru-dsp-cop-dev
+
+###
+# The following services are primarily defined in the docker-compose.base.yaml file.
+services:
+
+#================================================================
+# Start the COP database
+#----------------------------------------------------------------
+  cop-db:
+    extends:
+      file: ./compose/docker-compose.cop-db.yaml
+      service: cop-db
+
+#================================================================
+# Setup the COP database
+#----------------------------------------------------------------
+  cop-db-setup:
+    extends:
+      file: ./compose/docker-compose.cop-db.yaml
+      service: cop-db-setup
+
+#================================================================
+# Start Keycloak
+#----------------------------------------------------------------
+  keycloak:
+    extends:
+      file: ./compose/docker-compose.keycloak.yaml
+      service: keycloak
+
+#================================================================
+# Provisioning Keycloak with expected realm, clients, and users 
+#----------------------------------------------------------------
+  dsp-keycloak-provisioning:
+    extends:
+      file: ./compose/docker-compose.dsp.yaml
+      service: dsp-keycloak-provisioning
+
+#================================================================
+# Start the DSP database
+#----------------------------------------------------------------
+  dsp-db:
+    extends:
+      file: ./compose/docker-compose.dsp.yaml
+      service: dsp-db
+
+#================================================================
+# Start the DSP services
+#----------------------------------------------------------------
+  dsp:
+    extends:
+      file: ./compose/docker-compose.dsp.yaml
+      service: dsp
+
+#================================================================
+# Provision the DSP with DSP COP federal policy
+#----------------------------------------------------------------
+  dsp-provision-federal-policy:
+    extends:
+      file: ./compose/docker-compose.dsp.yaml
+      service: dsp-provision-federal-policy
+
+#================================================================
+# Wait for someone needing a shell 
+#----------------------------------------------------------------
+  dsp-cli-user:
+    extends:
+      file: ./compose/docker-compose.dsp.yaml
+      service: dsp-cli-user
+
+#================================================================
+# Start NiFi - EXPERIMENTAL AND NOT YET SUPPORTED
+#----------------------------------------------------------------
+  # nifi:
+  #   profiles: [nifi]
+  #   extends:
+  #     file: ./compose/docker-compose.nifi.yaml
+  #     service: nifi
+
+  # tagging:
+  #   profiles: [nifi]
+  #   extends:
+  #     file: ./compose/docker-compose.tagging.yaml
+  #     service: tagging

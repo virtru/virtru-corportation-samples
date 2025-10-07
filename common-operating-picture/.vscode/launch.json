@@ -1,0 +1,38 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Go: Run with mock assets",
+      // Configuration for launching and debugging Go applications in Visual Studio Code.
+      // This section specifies the type of debugger to use, which in this case is set to "go".
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}",
+      "env": {},
+      // If multiple buildFlags are required, pass them like this:
+      // "buildFlags": "-tags 'TAG1 TAG2 TAG3'"
+      "args": [
+        "serve"
+      ],
+      "showLog": true,
+    },
+    {
+      "name": "Go: Run with embedfiles",
+      // Configuration for launching and debugging Go applications in Visual Studio Code.
+      // This section specifies the type of debugger to use, which in this case is set to "go".
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}",
+      "env": {},
+      // If multiple buildFlags are required, pass them like this:
+      // "buildFlags": "-tags 'TAG1 TAG2 TAG3'"
+      "buildFlags": "-tags 'embedfiles'",
+      "args": [
+        "serve"
+      ],
+      "showLog": true,
+    },
+  ]
+}

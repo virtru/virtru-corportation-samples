@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  annotations:
+    use-subpath: "true"
+  name: cop-setup-db
+data:
+  ## Read files directly into the ConfigMap.  Note that symlinks work, and are a useful way to
+  # store these kind of files outside of the chart.
+  #
+  # NOTE: The piping below is a slight hack, specific to our input file format.  Based on the desired output, we are
+  # carefuly adjusting the content according to our needs.
+  #
+  # Thus far, the approach works well for us.  If a simpler approach is available, it should be considered.
+  {{- $files := .Files }}
+  {{ range list "assets/schema.sql" "assets/seed.sql" }}
+  {{ base . }}: |
+    {{ $files.Get . | replace "\t" "  " | indent 4 | squote | replace "'    " "" | trimSuffix "'"  }}
+  {{ end }}
+
+

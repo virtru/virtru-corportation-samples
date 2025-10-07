@@ -1,0 +1,52 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -c -f ./docker-compose.yaml
+    kompose.version: 1.34.0 (HEAD)
+    helm.sh/hook: post-install
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+  labels:
+    io.kompose.service: cop-db-setup
+  name: cop-db-setup
+spec:
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -c -f ./docker-compose.yaml
+        kompose.version: 1.34.0 (HEAD)
+      labels:
+        io.kompose.service: cop-db-setup
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - args:
+            - bash
+            - -c
+            - |2
+               \
+                echo \"Starting COP DB setup...\" \
+                && echo \"Setting up PostGIS and the DB schema...\" \
+                && psql -h cop-db -p 15432 -U postgres -d postgres -f /scripts/schema.sql \
+                && echo \"Setting up Source Types seed data...\" \
+                && psql -h cop-db -p 15432 -U postgres -d postgres -f /scripts/seed.sql \
+                && echo \"Database setup complete.\" \
+          env:
+            - name: PGPASSWORD
+              value: postgres
+            - name: PGUSER
+              value: postgres
+          image: {{ .Values.db.image.repo }}/{{ .Values.db.image.name }}:{{ .Values.db.image.tag }}
+          name: cop-db-setup
+          volumeMounts:
+            - mountPath: /scripts
+              name: cop-setup-db
+      volumes:
+        - name: cop-setup-db
+          configMap: 
+            name: cop-setup-db
+            items:
+              - key: schema.sql
+                path: schema.sql
+              - key: seed.sql
+                path: seed.sql

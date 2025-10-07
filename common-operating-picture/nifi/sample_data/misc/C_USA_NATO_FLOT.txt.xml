@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tdf:TrustedDataObject xmlns:edh="urn:us:gov:ic:edh" xmlns:icid="urn:us:gov:ic:id" xmlns:arh="urn:us:gov:ic:arh"
+                       xmlns:ism="urn:us:gov:ic:ism" xmlns:ntk="urn:us:gov:ic:ntk"
+                       schemaLocation="https://www.dni.gov/.../ic-technical-specifications/trusted-data-format/"
+                       xmlns:tdf="urn:us:gov:ic:tdf">
+    <tdf:HandlingAssertion tdf:scope="TDO">
+        <tdf:HandlingStatement>
+            <edh:Edh arh:DESVersion="3" icid:DESVersion="1">
+                <edh:DataItemCreateDateTime>2023-06-29T16:16:28.9871693Z</edh:DataItemCreateDateTime>
+                <edh:ResponsibleEntity edh:role="Originator" ism:classification="C" ism:releasableTo="NATO USA" />
+                <arh:Security arh:DESVersion="3">
+                    <ntk:Access ism:classification="C" ism:disseminationControls="REL" ism:releasableTo="NATO USA" />
+                </arh:Security>
+            </edh:Edh>
+        </tdf:HandlingStatement>
+        <tdf:Binding>
+            <tdf:Signer tdf:subject="CN=EC2AMAZ-8I9R9MS, O=Internet Widgits Pty Ltd, S=Some-State, C=US" tdf:issuer="CN=EC2AMAZ-8I9R9MS, O=Internet Widgits Pty Ltd, S=Some-State, C=US" tdf:serial="712D67A4CDE246E6E3004EFDF0FE8749F866CD27" />
+            <tdf:SignatureValue tdf:signatureAlgorithm="SHA256" tdf:includesStatementMetadata="true">hU+biSSQbswxJVx/FNMuKlTmq1YQzqHOG+9kzt7a5I8u3kwsxHjOdL1BJg/IixLlfxRYGuKhYJD4RtGTAtB94icdRZuco7oP9kkG7Ume2zywbI5enjVK9B4BxQMdkiu1iBijOy63WMUtse9VrpXlbDvkO7V3LUDVUjX0d7/ELf3Oqzn+wqPHdAytJO1mbkQtv9ppF8squgSDmHj8WY0au4vZzPKud2k/sOogfK3zvLofwPQOhxtdWEcJyaDWUMjN0guQy0PyxwhpGqBpROcBZdz0CwmKgwlzd6RnHLbAd+xN+iMGjA1KAYZeDWm2uofE7Bd1G6pN+sGS1989T/9b758/Sq3Vo5Nb9kJDN58+jcmVnh7TbWtS9qZ4/2Ci6ywKkebk3/aryevB14SMvooBdL50HDdBgWF0rTYcBY/5bTOb9s1hoSw2Ioi1A2STsNJKlZA4lNPGihUYLGe6+KMhZ0pRATE71ssdbrGR1rjc9B/9w8TetUCAi6um+S9KRkHIS4kIwhHhJS36GqI23eo4uqWVIbUgWrT/cN4WlSsqgxBZfDUPKhuqJCK7Z8Q6Dgh4LlbR22gGrfiZlP6a6JAMGR59C3OIa+fFRGHio9sy7NGqb6nyynk2AEmpvo8lBnZS+HcQ2L8b1WD50po0bUhEk77L82si/08iLMVskEn5zUM=</tdf:SignatureValue>
+        </tdf:Binding>
+    </tdf:HandlingAssertion>
+    <tdf:HandlingAssertion tdf:scope="PAYL">
+        <tdf:HandlingStatement>
+            <edh:Edh arh:DESVersion="3" icid:DESVersion="1">
+                <edh:DataItemCreateDateTime>2023-06-29T16:16:28.9871693Z</edh:DataItemCreateDateTime>
+                <edh:ResponsibleEntity edh:role="Originator" ism:classification="C" ism:releasableTo="NATO USA" />
+                <arh:Security arh:DESVersion="3">
+                    <ntk:Access ism:classification="C" ism:disseminationControls="REL" ism:releasableTo="NATO USA" />
+                </arh:Security>
+            </edh:Edh>
+        </tdf:HandlingStatement>
+        <tdf:Binding>
+            <tdf:Signer tdf:subject="CN=EC2AMAZ-8I9R9MS, O=Internet Widgits Pty Ltd, S=Some-State, C=US" tdf:issuer="CN=EC2AMAZ-8I9R9MS, O=Internet Widgits Pty Ltd, S=Some-State, C=US" tdf:serial="712D67A4CDE246E6E3004EFDF0FE8749F866CD27" />
+            <tdf:SignatureValue tdf:signatureAlgorithm="SHA256" tdf:includesStatementMetadata="true">KQAjCJfL22YYmUJ+Y4dAAQdUJrwl9sX4bYPCMcYJiQw4nOv54reKVsW8RvPDwVsxz3I9kFxWNBRz/8WYrcrZmpPdVQ/avZODFf/VJSUf0DpwSzAVP09hMZuQHs5+slJGXybOeBsUUXRAkAWac5nXbl+qoDU/eKvau6gVkteGj+Pqww/gyOwLHCYNZXgdoxKnBj34cPtvYC31XpqaziKzMUd42qu2MHy8d8XNI9pjMQMkfg8IVyFZ1BDjDWVXkD322XQSjDynCuy5gJ38xGIlP0HwJkKmj8ypLQn4dQJClJ+1U2mRVsjGWJIbWWgDKB5AK19ATuPHJ4WRsMhfvc9yL6Abf0z/rm2PaltzW+d8TWgvSAEqdYo1LrNjFMHWkS9+GE6MAMrjN8vb3CEbuXUS57PDv7g/NrEZ4O8UN5O3XMCoMDWqKOp+7AH6Rk79fm6sbMzT4ogk6/bqKxZNDAfJws+I6m5IiJWwwQkHIVjfP+N/yLWDcAO9wYxCGLiOmcYkd4sYWlQMxOZ4tWi5mR4MAu67OgfiEGFa8yYGVfRAVEQaOkJTBN5rWprSv9dR5A7lsQPU6DG8WzmZozyteK9YNJdJFUkzQ8q2ciBv7WmCeUwHAcQcTakF20Dw3ctfe1OzvgRgojIIjMMMjZFV7kG2862MQs5QMrM1s2Z3UMahNSw=</tdf:SignatureValue>
+        </tdf:Binding>
+    </tdf:HandlingAssertion>
+    <tdf:Base64BinaryPayload tdf:mediaType="application/octet-stream" tdf:filename="C_USA_NATO_FLOT.txt.tdf" tdf:isEncrypted="true">UEsDBBQAAAAAAA6C3VZZLR5xhwgAAIcIAAAPAAAAMC5tYW5pZmVzdC5qc29ueyJlbmNyeXB0aW9uSW5mb3JtYXRpb24iOnsiaW50ZWdyaXR5SW5mb3JtYXRpb24iOnsiZW5jcnlwdGVkU2VnbWVudFNpemVEZWZhdWx0IjoxMDQ4NjMyLCJyb290U2lnbmF0dXJlIjp7ImFsZyI6IkhTMjU2Iiwic2lnIjoiTVRjMU16RmhNVEl6TmpRNE5UWmxaVGN5T0RVeE16QXpORGRpTW1FeE5XWmlNVGsyWVdFNE5UWXdNVEkzWWpBME5UQTBOMlZtTkdKaFpqQTNZbU13WlE9PSJ9LCJzZWdtZW50SGFzaEFsZyI6IkdNQUMiLCJzZWdtZW50U2l6ZURlZmF1bHQiOjEwNDg2MDQsInNlZ21lbnRzIjpbeyJlbmNyeXB0ZWRTZWdtZW50U2l6ZSI6MTY1LCJoYXNoIjoiTVRSa1pEZGpORE5tTldReVptRTFOREEzWkRFd01qWXhPVEUxTlRneE1qRT0iLCJzZWdtZW50U2l6ZSI6MTM3fV19LCJrZXlBY2Nlc3MiOlt7InBvbGljeUJpbmRpbmciOiJPV1F5TW1Wa09XSTJabVV3Wm1VeFlUazFNR1JpTTJZNU56UXdZMk5sTjJVMU5EY3pNV0kwTW1ReFpqRTFaV00zWTJJMlptWmpZVE01WmpkbFpHTXlPUT09IiwicHJvdG9jb2wiOiJrYXMiLCJ0eXBlIjoid3JhcHBlZCIsInVybCI6Imh0dHBzOi8vc2hwLnZ0ZXN0LnZpcnRydS5jb20vYXBpL2thcyIsIndyYXBwZWRLZXkiOiJobFpRbDh2c25CZVVYczl5SitIR2RQWkhqNGJuSWtaVDVtOURyekt4TFYvVDc3b1lBbExreWFQN0diY0QwSXlST2hJakxBT1NvcTc5b1Q1bXlKdDRJR0x1UTV4ZnE2TS94aTZRS0JWSmZUWTNpRUZva0FIL0tOdjlyRmFqYzhxZW84N0FvWm00QmkrVTRGc04rU1A4SjZ5cDdTSkNsUkUxRmhCQ3RMU3UybUhwSkx6dExFWVErMVJudE9SWnhxdTJXbEFTd0VtVWN3S0RyYjkyQ1FmU3Q2T1RTcFVFbFVOR3pNeTQ2bmZWYkN6QVFydzdPaEJvazYyakRvelVBUU9lMVA1aEdTVmtTSWg4S21QTktiYncyeXFvUzFvUnRwY1pLY0FMZWFKQWNXMWRYTTlRc3RQd09QTERUMThYT0t3L1BXbmlkTENxL0JXL0FOa0NkZ0loVFllZnV2WXRlMStqRGNBbGVHVXV4V0NRL05FcmpONmF4bmNGTnNQeGtPSWowMWY1MmNxMTE3cFMzU0Zwayt5YnJNWndOaER4SEg1cXFwQmdYTTd5MWtJbTlvZytJSTJmT2hYWURkL1JKQWtTMm0vQnI1bUpLYTZNVFFSZ3J3Tk1TRzNnZTBieUw5MVcvc1JWcTVkZ0M1NTNLS0dVUHpnQWhpNWcyZjRIVnFQUzlnZllqZjM5U3NyVjdlSzE5ekxBRWpFQmRjZXVnYnorVW85QnRBeENRZ1JkVkZTZlN1Rzk2M3gvMmRCWjlMVE5qTmdwdjdSZmhUREhVME1NNGovUW1aMnlxSU1GVkhNYlFwTHZmeTRQRDhPZGxEeURLS1NlaDAzZjkya3p2TGxjbU9kVGthOWlWRG12V1R5eG1XaWxLeGdKY01XMTIwTjJBNVczUFh0NW5hZz0ifV0sIm1ldGhvZCI6eyJhbGdvcml0aG0iOiJBRVMtMjU2LUdDTSIsImlzU3RyZWFtYWJsZSI6dHJ1ZSwiaXYiOiIxdGF4ME04MDhZRjA3OUpqIn0sInBvbGljeSI6ImV5SmliMlI1SWpwN0ltUmhkR0ZCZEhSeWFXSjFkR1Z6SWpwYmV5SmhkSFJ5YVdKMWRHVWlPaUpvZEhSd09pOHZaR1Z0Ynk1amIyMHZZWFIwY2k5RGJHRnpjMmxtYVdOaGRHbHZiaTkyWVd4MVpTOURiMjVtYVdSbGJuUnBZV3dpTENKa2FYTndiR0Y1VG1GdFpTSTZiblZzYkN3aWEyRnpWWEpzSWpvaWFIUjBjSE02THk5emFIQXVkblJsYzNRdWRtbHlkSEoxTG1OdmJTOWhjR2t2YTJGekx5SXNJbkIxWWt0bGVTSTZiblZzYkgwc2V5SmhkSFJ5YVdKMWRHVWlPaUpvZEhSd09pOHZaR1Z0Ynk1amIyMHZZWFIwY2k5eVpXeDBieTkyWVd4MVpTOU9RVlJQSWl3aVpHbHpjR3hoZVU1aGJXVWlPbTUxYkd3c0ltdGhjMVZ5YkNJNkltaDBkSEJ6T2k4dmMyaHdMblowWlhOMExuWnBjblJ5ZFM1amIyMHZZWEJwTDJ0aGN5OGlMQ0p3ZFdKTFpYa2lPbTUxYkd4OUxIc2lZWFIwY21saWRYUmxJam9pYUhSMGNEb3ZMMlJsYlc4dVkyOXRMMkYwZEhJdmNtVnNkRzh2ZG1Gc2RXVXZWVk5CSWl3aVpHbHpjR3hoZVU1aGJXVWlPbTUxYkd3c0ltdGhjMVZ5YkNJNkltaDBkSEJ6T2k4dmMyaHdMblowWlhOMExuWnBjblJ5ZFM1amIyMHZZWEJwTDJ0aGN5OGlMQ0p3ZFdKTFpYa2lPbTUxYkd4OVhTd2laR2x6YzJWdElqcGJYWDBzSW5WMWFXUWlPaUppWlRWa1pUZzBOUzAyTURFeUxUUXhNemt0WVRrNFpTMHpNVEE0TW1ReU5qZzFaR0VpZlE9PSIsInR5cGUiOiJzcGxpdCJ9LCJwYXlsb2FkIjp7ImlzRW5jcnlwdGVkIjp0cnVlLCJtaW1lVHlwZSI6InRleHQiLCJwcm90b2NvbCI6InppcCIsInR5cGUiOiJyZWZlcmVuY2UiLCJ1cmwiOiIwLnBheWxvYWQifX1QSwMEFAAAAAAADoLdVrlsJLelAAAApQAAAAkAAAAwLnBheWxvYWTW1rHQzzTxgXTv0mOJH7v8zPoWILRutwfLLpjFYlcf4nu/V+0X22slAVVxifUIQPmxG83sekwXP+uxywUOkDk1k8k18dB5pJXe/uji0E2y3+c9LSZXAIET10Inb86i6bmr6lLg4w4nXNkm0DrTLkeHwKTDAWt2wL4J82s8klzDtx9TkM0QOsmpFOktlENBIxURq1Q3RhTdfEP10vpUB9ECYZFVgSFQSwECFAAUAAAAAAAOgt1WWS0ecYcIAACHCAAADwAAAAAAAAAAAAAAAAAAAAAAMC5tYW5pZmVzdC5qc29uUEsBAhQAFAAAAAAADoLdVrlsJLelAAAApQAAAAkAAAAAAAAAAAAAAAAAtAgAADAucGF5bG9hZFBLBQYAAAAAAgACAHQAAACACQAAAAA=</tdf:Base64BinaryPayload>
+</tdf:TrustedDataObject>

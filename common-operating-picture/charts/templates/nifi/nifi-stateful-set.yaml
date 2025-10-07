@@ -1,0 +1,138 @@
+{{ if .Values.nifi.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: cop-nifi
+  labels:
+    app: nifi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nifi
+  template:
+    metadata:
+      labels:
+        app: nifi
+    spec:
+      serviceAccount: cop-nifi-sa
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: cop-nifi
+          image: {{ .Values.nifi.image.repo }}/{{ .Values.nifi.image.name }}:{{ .Values.nifi.image.tag }}
+          lifecycle:
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+          # envFrom:
+          #   - configMapRef:
+          #       name: nifi-config
+          env:
+            {{ if .Values.nifi.config.service.tls.enabled }}
+            - name: NIFI_WEB_HTTPS_PORT
+              value: {{ .Values.nifi.config.env.NIFI_WEB_HTTPS_PORT | default 8080 | quote }}
+            - name: NIFI_WEB_PROXY_HOST
+              value: {{ .Values.nifi.host }}:443
+            {{ else }}
+            - name: NIFI_WEB_HTTP_PORT
+              value: {{ .Values.nifi.config.env.NIFI_WEB_HTTP_PORT  | default 8080 | quote }}
+            {{ end }}
+            - name: TDF_FLOW_TAGGING_AUTH
+              value: {{ .Values.nifi.config.env.TDF_FLOW_TAGGING_AUTH | default false | quote }}
+            - name: TDF_FLOW_TAGGING_USE_SSL
+              value: {{ .Values.nifi.config.env.TDF_FLOW_TAGGING_USE_SSL | default true | quote }}
+            - name: TDF_FLOW_TAGGING_ENDPOINT
+              value: {{ .Values.nifi.config.env.TDF_FLOW_TAGGING_ENDPOINT }}
+            - name: TDFDB_DATABASE_USERNAME
+              value: {{ .Values.nifi.config.env.TDFDB_DATABASE_USERNAME }}
+            - name: TDFDB_DATABASE_PASSWORD
+              value: {{ .Values.nifi.config.env.TDFDB_DATABASE_PASSWORD }}
+            - name: TDFDB_DATABASE_CATALOG_NAME
+              value: {{ .Values.nifi.config.env.TDFDB_DATABASE_CATALOG_NAME }}
+            - name: TDFDB_DATABASE_SCHEMA_NAME
+              value: {{ .Values.nifi.config.env.TDFDB_DATABASE_SCHEMA_NAME }}
+            - name: TDFDB_DATABASE_HOST
+              value: {{ .Values.nifi.config.env.TDFDB_DATABASE_HOST }}
+            - name: TDFDB_DATABASE_NAME
+              value: {{ .Values.nifi.config.env.TDFDB_DATABASE_NAME }}
+            - name: TDFDB_DATABASE_TABLE
+              value: {{ .Values.nifi.config.env.TDFDB_DATABASE_TABLE }}
+            - name: TDF_FLOW_PLATFORM_ENDPOINT
+              value: {{ .Values.nifi.config.env.TDF_FLOW_PLATFORM_ENDPOINT }}
+            - name: TDF_FLOW_NANO_KAS_URL
+              value: {{ .Values.nifi.config.env.TDF_FLOW_NANO_KAS_URL }}
+            - name: TDF_FLOW_TDF_KAS_URL
+              value: {{ .Values.nifi.config.env.TDF_FLOW_TDF_KAS_URL }}
+            - name: TDF_FLOW_CLIENT_ID
+              value: {{ .Values.nifi.config.env.TDF_FLOW_CLIENT_ID }}
+            - name: TDF_FLOW_CLIENT_SECRET
+              value: {{ .Values.nifi.config.env.TDF_FLOW_CLIENT_SECRET }}              
+            - name: TDF_TRUSTSTORE_FILENAME
+              value: {{ .Values.nifi.config.env.TDF_TRUSTSTORE_FILENAME }} 
+          volumeMounts:
+            # - name: nifi-config
+            #   configMap:
+            #     name: nifi-config
+            #     items:
+            #       - key: config.yaml
+            #         path: config.yaml
+            # defaultMode: 420
+            - name: cop-nifi-tls-cert
+              mountPath: /opt/nifi/certs
+            - name: cop-nifi-pv
+              mountPath: /opt/nifi/logs
+              subPath: logs
+            - name: cop-nifi-pv
+              mountPath: /opt/nifi/data
+              subPath: data
+            - name: cop-nifi-pv
+              mountPath: /opt/nifi/flowfile_repository
+              subPath: flowfile_repository
+            - name: cop-nifi-pv
+              mountPath: /opt/nifi/content_repository
+              subPath: content_repository
+            - name: cop-nifi-pv
+              mountPath: /opt/nifi/provenance_repository
+              subPath: provenance_repository
+            - name: cop-nifi-pv
+              mountPath: /opt/nifi/nifi-current/extensions
+              subPath: extensions
+            - name: cop-nifi-pv
+              mountPath: /opt/nifi/nifi-current/truststore
+              subPath: truststore
+            - name: cop-nifi-pv
+              mountPath: /opt/nifi/nifi-current/custom-libs
+              subPath: custom-libs
+            - name: cop-nifi-pv
+              mountPath: /opt/nifi/nifi-current/sample_data
+              subPath: sample_data
+            - name: cop-nifi-pv
+              mountPath: /opt/nifi/processors
+              subPath: processors
+            - name: cop-nifi-pv
+              mountPath: /opt/nifi/flows
+              subPath: flows
+      restartPolicy: Always
+      volumes:
+        - name: cop-nifi-tls-cert
+          secret:
+            secretName: {{ .Values.dsp_cert_secret }}
+            items:
+                - key: tls.crt
+                  path: tls.crt
+                - key: tls.key
+                  path: tls.key      
+        - name: cop-nifi-pv
+          persistentVolumeClaim:
+            claimName: cop-nifi-pv  
+      #  - name: cop-trust
+      #    secret:
+      #      secretName: {{ .Values.dsp_cert_secret }}
+      #      items:
+      #        - key: ca.crt
+      #          path: ca-certificates.crt
+
+{{ end }}

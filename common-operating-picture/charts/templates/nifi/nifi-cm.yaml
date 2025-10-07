@@ -1,0 +1,28 @@
+{{ if .Values.nifi.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nifi-config
+  labels:
+    app: nifi
+  # annotations:
+  #   use-subpath: "true"
+data:
+  NIFI_WEB_HTTP_PORT: {{ .Values.nifi.config.env.NIFI_WEB_HTTP_PORT | default "8080" | quote }} 
+  TDF_FLOW_TAGGING_AUTH: {{ .Values.nifi.config.env.TDF_FLOW_TAGGING_AUTH | default "false" | quote }}
+  TDF_FLOW_TAGGING_USE_SSL: {{ .Values.nifi.config.env.TDF_FLOW_TAGGING_USE_SSL | default "true" | quote }}
+  TAGGING_PDP_ENDPOINT: {{ .Values.nifi.config.env.TAGGING_PDP_ENDPOINT }} 
+  TDFDB_DATABASE_HOST: {{ .Values.nifi.config.env.TDFDB_DATABASE_HOST }} 
+  TDFDB_DATABASE_USERNAME: {{ .Values.nifi.config.env.TDFDB_DATABASE_USERNAME | default "postgres" | quote }}
+  TDFDB_DATABASE_PASSWORD: {{ .Values.nifi.config.env.TDFDB_DATABASE_PASSWORD | default "postgres" | quote }}
+  TDFDB_DATABASE_CATALOG_NAME: {{ .Values.nifi.config.env.TDFDB_DATABASE_CATALOG_NAME | default "postgres" | quote }}
+  TDFDB_DATABASE_SCHEMA_NAME: {{ .Values.nifi.config.env.TDFDB_DATABASE_SCHEMA_NAME | default "public" | quote }}
+  TDFDB_DATABASE_NAME: {{ .Values.nifi.config.env.TDFDB_DATABASE_NAME | default "postgres" | quote }}
+  TDFDB_DATABASE_TABLE: {{ .Values.nifi.config.env.TDFDB_DATABASE_NAME | default "tdf_objects" | quote }}
+  TDF_FLOW_PLATFORM_ENDPOINT: {{ .Values.nifi.config.env.TDF_FLOW_PLATFORM_ENDPOINT }} 
+  TDF_FLOW_NANO_KAS_URL: {{ .Values.nifi.config.env.TDF_FLOW_NANO_KAS_URL }} 
+  TDF_FLOW_TDF_KAS_URL: {{ .Values.nifi.config.env.TDF_FLOW_TDF_KAS_URL }} 
+  TDF_FLOW_CLIENT_ID: {{ .Values.nifi.config.env.TDF_FLOW_CLIENT_ID | default "opentdf" | quote }}
+  TDF_FLOW_CLIENT_SECRET: {{ .Values.nifi.config.env.TDF_FLOW_CLIENT_SECRET | default "secret" | quote }}
+  TDF_TRUSTSTORE_FILENAME: {{ .Values.nifi.config.env.TDF_TRUSTSTORE_FILENAME | default "/opt/nifi/nifi-current/truststore/ca.jks" | quote }}
+  {{ end }}
