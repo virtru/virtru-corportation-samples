@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1.6
 # Set your runtime image (override with --build-arg)
-ARG DSP_IMAGE=us-docker.pkg.dev/prj-infra-automation-ktbz/internal/data-security-platform:v2.6.2
+#ARG DSP_IMAGE=us-docker.pkg.dev/prj-infra-automation-ktbz/internal/data-security-platform:v2.6.2
+ARG DSP_IMAGE=localhost:5000/virtru/data-security-platform:v2.6.2
 #ARG DSP_IMAGE=us-docker.pkg.dev/prj-infra-automation-ktbz/internal/data-security-platform:v2.5.0-build.e8c8e8a
 
 # ---------- prep stage: build CA bundle & stage files ----------

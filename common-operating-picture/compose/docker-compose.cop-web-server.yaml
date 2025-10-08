@@ -26,6 +26,10 @@ services:
       - 5001:5001
       - 5002:5002
     depends_on:
-      - cop-db-setup
+      cop-db-setup:
+        condition: service_completed_successfully
+      dsp:
+        condition: service_healthy
+        restart: true
     extra_hosts:
       - "local-dsp.virtru.com:host-gateway" #host and ip

@@ -70,10 +70,7 @@ services:
         restart: true
     healthcheck:
       test:
-        [
-          'CMD-SHELL',
-          'wget --spider --no-check-certificate https://local-dsp.virtru.com:8080/healthz || exit 1',
-        ]
+        ['CMD-SHELL', 'curl -fkSs --max-time 5 https://local-dsp.virtru.com:8080/healthz >/dev/null || exit 1']
       interval: 60s
       timeout: 10s
       retries: 10
