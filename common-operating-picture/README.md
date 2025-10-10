@@ -68,7 +68,7 @@ scoped to how you are running the application.
 3. System-level: `/etc/dsp-cop/config.yaml`
 
 > [!NOTE]
-> The DSP config (typically `dsp.yaml`) can be found and updated within the `dev.dsp.Dockerfile`.
+> The DSP config (`dsp.yaml`) can be found and updated in the root-level of this project. It was previously embedded in `dev.dsp.Dockerfile`.
 
 #### New Configuration Options
 
@@ -147,21 +147,18 @@ To demonstrate the capabilities of DSP, there are two root-level files to provis
 
       > Note: you can use `'make dev-certs'` as a shortcut to generate the development certs
 
-5. Google Artifact Registry for DSP Images
+5. Copy DSP Docker Images to Local Registry
 
-      DSP images (and possibly others in the future) are published to Google Artifact Registry and therefore auth to the registry is required:
+      DSP images are stored in the `virtru-dsp-bundle` as OCI artifacts. They can be copied to your local registry by using the `dsp copy-images` utility in that same bundle:
 
-      * Install gcloud cli [install directions](https://cloud.google.com/sdk/docs/install-sdk)
-      * Authenticate (or re-authenticate; the Auth token is normally good for 1 hour):
-
-      ```shell
-      gcloud auth login
-      ```
-
-      * Authenticate to GCP registry to allow pulls:
-
-      ```shell
-      gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://us-docker.pkg.dev
+      ```bash
+      # Setup a local registry
+      docker run -d --restart=always -p 5000:5000 --name registry registry:2
+      # Copy DSP images into local registry (Run in virtru-dsp-bundle root-level)
+      dsp copy-images --insecure localhost:5000/virtru
+      # Confirm that the images were successfully copied
+      curl -X GET http://localhost:5000/v2/_catalog
+      curl -X GET http://localhost:5000/v2/virtru/data-security-platform/tags/list
       ```
 
 ### Start required services
@@ -169,7 +166,7 @@ To demonstrate the capabilities of DSP, there are two root-level files to provis
 Create and start containers
 
 ```sh
-  docker-compose -f docker-compose.dev.yaml up
+  docker compose -f docker-compose.all.yaml up
 ```
 
 This starts the following services:
@@ -181,17 +178,19 @@ This starts the following services:
    2. Setup the database
    3. Start the DSP server
    4. Load the sample policy
-4. [NiFi](./compose/docker-compose.nifi.yaml) (_disabled by default_)
+4. [COP Web Server](./compose/docker-compose.cop-web-server.yaml)
+5. [NiFi](./compose/docker-compose.nifi.yaml) (_disabled by default_)
    > [!NOTE]
    > Nifi is resource-intensive, so you should run `colima` with extra resources allocated: `colima start --memory 16 --cpu 6`
    1. For local docker compose, run the [build_truststore_local.sh](./build_truststore_local.sh)  to build a truststore for use with NiFi and Tagging Services
    2. Copy the trusted cert for tagging pdp use to it's mounted drive: `cp ./dsp-keys/local-dsp.virtru.com.pem ./nifi/truststore`
-   3. Run with envfile and nifi profile enabled: `docker-compose --profile nifi -f docker-compose.dev.yaml --env-file=./env/default.env up`
+   3. Run with envfile and nifi profile enabled: `docker compose --profile nifi -f docker-compose.all.yaml --env-file=./env/default.env up`
       * Note that NiFi uses significant resources; ensure your docker env has sufficient resources allocated
 
-### Run the COP Server
+### Run the COP Server Locally
 
 > [!NOTE]
+> When running the COP Server locally, use `docker-compose.dev.yaml` instead of `docker-compose.all.yaml` to omit the cop-web-server from the Docker environment.
 > To run without mocked static assets, must have followed [frontend README](/ui/README.md).
 
 ```bash

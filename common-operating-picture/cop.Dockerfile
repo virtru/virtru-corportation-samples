@@ -30,7 +30,7 @@ RUN npm run build
 # Geos builder libgeos-dev
 FROM cgr.dev/chainguard/wolfi-base@sha256:c519d1c81a18a5c752f701bc59ceddfa4bf1a44e9bb605c73856cef216f69f7b AS geos-builder
 
-RUN apk add --no-cache geos=3.12.1-r1 geos-dev=3.12.1-r1
+RUN apk add --no-cache geos=3.13.1-r3 geos-dev=3.13.1-r3
 
 # Go 1.24.2
 FROM cgr.dev/chainguard/go@sha256:dc53da3597aa89079c0bd3f402738bf910f2aa635f23d42f29b7e534a61e8149 AS go-setup

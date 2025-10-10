@@ -4,7 +4,8 @@ services:
 #----------------------------------------------------------------
   keycloak:
     # This is kc 24.0.1 with opentdf protocol mapper on board
-    image: us-docker.pkg.dev/prj-infra-automation-ktbz/remote-proxy-dockerhub/keycloak/keycloak:24.0.5
+    #image: us-docker.pkg.dev/prj-infra-automation-ktbz/remote-proxy-dockerhub/keycloak/keycloak:24.0.5 #Access Denied, Requires Creds
+    image: keycloak/keycloak:25.0
     restart: always
     command: ['start-dev']
     environment:
