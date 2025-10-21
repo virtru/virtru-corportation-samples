@@ -288,57 +288,57 @@ subject_mappings:
     attribute_value: demo.com/attr/classification/value/topsecret
     subject_condition_set_name: scs_clearance_topsecret
     actions:
-      - standard: DECRYPT
+      - DECRYPT
   sm_classification_secret:
     attribute_value: demo.com/attr/classification/value/secret
     subject_condition_set_name: scs_clearance_secret
     actions:
-      - standard: DECRYPT
+      - DECRYPT
   sm_classification_confidential:
     attribute_value: demo.com/attr/classification/value/confidential
     subject_condition_set_name: scs_clearance_confidential
     actions:
-      - standard: DECRYPT
+      - DECRYPT
   sm_classification_unclassified:
     attribute_value: demo.com/attr/classification/value/unclassified
     subject_condition_set_name: scs_clearance_unclassified
     actions:
-      - standard: DECRYPT
+      - DECRYPT
   sm_needtoknow_aaa:
     attribute_value: demo.com/attr/needtoknow/value/aaa
     subject_condition_set_name: scs_needtoknow_aaa
     actions:
-      - standard: DECRYPT
+      - DECRYPT
   sm_needtoknow_bbb:
     attribute_value: demo.com/attr/needtoknow/value/bbb
     subject_condition_set_name: scs_needtoknow_bbb
     actions:
-      - standard: DECRYPT
+      - DECRYPT
   sm_needtoknow_int:
     attribute_value: demo.com/attr/needtoknow/value/int
     subject_condition_set_name: scs_needtoknow_int
     actions:
-      - standard: DECRYPT
+      - DECRYPT
   sm_needtoknow_ops:
     attribute_value: demo.com/attr/needtoknow/value/ops
     subject_condition_set_name: scs_needtoknow_ops
     actions:
-      - standard: DECRYPT
+      - DECRYPT
   sm_nationality_group_PINK:
     attribute_value: demo.com/attr/relto/value/pink
     subject_condition_set_name: scs_nationality_group_PINK
     actions:
-      - standard: DECRYPT
+      - DECRYPT
   sm_nationality_group_NATO:
     attribute_value: demo.com/attr/relto/value/nato
     subject_condition_set_name: scs_nationality_group_NATO
     actions:
-      - standard: DECRYPT
+      - DECRYPT
   sm_nationality_group_FVEY:
     attribute_value: demo.com/attr/relto/value/fvey
     subject_condition_set_name: scs_nationality_group_FVEY
     actions:
-      - standard: DECRYPT
+      - DECRYPT
 
   sm_nationality_AFG:
     template: template_relto_one_nationality
@@ -1043,7 +1043,7 @@ subject_mapping_templates:
     value_key_prefix: sm_nationality_
     attribute_value: demo.com/attr/relto/value/{{ value }}
     actions:
-      - standard: DECRYPT
+      - DECRYPT
     subject_condition_set_new:
       subject_sets:
         - condition_groups:
