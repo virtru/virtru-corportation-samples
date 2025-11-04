@@ -14,6 +14,10 @@ export function useRpcClient() {
   const { user } = useAuth();
 
   async function transformTdfObject(tdfObject: TdfObject): Promise<TdfObjectResponse | null> {
+
+    //tdfobject inspecting log
+    //console.log('tdfObject to be decrypted:', tdfObject);
+
     try {
       const decryptedData = JSON.parse(await decrypt(tdfObject.tdfBlob.buffer));
       return {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -32,9 +33,18 @@ func prepObjForResponse(in db.TdfObject) *tdf_objectv1.TdfObject {
 }
 
 func queryTdfObjectSwitch(ctx context.Context, q *db.Queries, p *tdf_objectv1.QueryTdfObjectsRequest) ([]*tdf_objectv1.TdfObject, error) {
+
 	srcType := p.GetSrcType()
+
+	//Log of SrcType
+	slog.Debug("SrcType for the queryTdfObjectsSwitch in utils.go", slog.Any("SrcType", srcType))
+
 	startTime := pgtype.Timestamp{Time: p.GetTsRange().GreaterOrEqualTo.AsTime(), Valid: true}
 	endTime := pgtype.Timestamp{Time: time.Now().UTC(), Valid: true}
+
+	//Log of Time in query
+	slog.Debug("Time range for the queryTdfObjectsSwitch in utils.go", slog.Any("Start", startTime), slog.Any("End", endTime))
+
 	if p.GetTsRange().LesserOrEqualTo != nil {
 		endTime = pgtype.Timestamp{Time: p.GetTsRange().LesserOrEqualTo.AsTime(), Valid: true}
 	}
@@ -49,6 +59,9 @@ func queryTdfObjectSwitch(ctx context.Context, q *db.Queries, p *tdf_objectv1.Qu
 	}
 
 	search := []byte(p.Search)
+
+	//Log of Search
+	slog.Debug("Search for the queryTdfObjectsSwitch in utils.go", slog.Any("Search", search))
 
 	if geometry != "" && len(search) > 0 {
 		return dbQuerySearchAndGeo(ctx, q, db.ListTdfObjectsWithSearchAndGeoParams{
@@ -167,10 +180,10 @@ type dbSrcTypeMetadata struct {
 		Details []string `json:"details,omitempty"`
 	} `json:"displayFields,omitempty"`
 	MapFields struct {
-		IconDefault string `json:"iconDefault"`
-		IconConfig []dbSrcTypeMapFieldConfig `json:"iconConfig,omitempty"`
-		ColorDefault string `json:"colorDefault"`
-		ColorConfig []dbSrcTypeMapFieldConfig `json:"colorConfig,omitempty"`
+		IconDefault  string                    `json:"iconDefault"`
+		IconConfig   []dbSrcTypeMapFieldConfig `json:"iconConfig,omitempty"`
+		ColorDefault string                    `json:"colorDefault"`
+		ColorConfig  []dbSrcTypeMapFieldConfig `json:"colorConfig,omitempty"`
 	} `json:"mapFields,omitempty"`
 }
 
@@ -191,22 +204,24 @@ type dbSrcTypeUiSchemaFieldConfig struct {
 }
 
 func dbQuerySrcType(ctx context.Context, query *db.Queries, srcTypeId string) (*tdf_objectv1.SrcType, error) {
+
+	slog.Info("This is in utils.go and is a dbQuery for SrcTypes", slog.Any("Id", srcTypeId))
 	srcType, err := query.GetSrcType(ctx, srcTypeId)
 	if err != nil {
 		return nil, err
 	}
-
+	//slog.Info("This query in utils.go is for:", slog.Any("Source Type:", srcType))
 	var dbFormSchema map[string]interface{}
 	err = json.Unmarshal(srcType.FormSchema, &dbFormSchema)
 	if err != nil {
 		return nil, err
 	}
-
+	//slog.Info("This query in utils.go is for:", slog.Any("Form Schema:", dbFormSchema))
 	formSchemaStruct, err := structpb.NewStruct(dbFormSchema)
 	if err != nil {
 		return nil, err
 	}
-
+	//slog.Info("This query in utils.go is for:", slog.Any("Form Schema Struct:", formSchemaStruct))
 	var dbUiSchema dbSrcTypeUiSchema
 	// unmarshal the known order field first
 	err = json.Unmarshal(srcType.UiSchema, &dbUiSchema)
@@ -225,7 +240,7 @@ func dbQuerySrcType(ctx context.Context, query *db.Queries, srcTypeId string) (*
 		Order:       dbUiSchema.Order,
 		FieldConfig: make(map[string]*tdf_objectv1.SrcTypeUiSchemaFieldConfig),
 	}
-
+	slog.Info("This query in utils.go is for:", slog.Any("Ui Schema:", uiSchema))
 	// convert the dynamic field configs to their proto struct equivalent
 	for k, v := range dbUiSchema.FieldConfig {
 		fieldConfig := &dbSrcTypeUiSchemaFieldConfig{}
@@ -251,7 +266,7 @@ func dbQuerySrcType(ctx context.Context, query *db.Queries, srcTypeId string) (*
 	var colorConfigs []*tdf_objectv1.SrcTypeMetadataMapFieldConfig
 	for _, v := range metadata.MapFields.ColorConfig {
 		colorConfigs = append(colorConfigs, &tdf_objectv1.SrcTypeMetadataMapFieldConfig{
-			Field: v.Field,
+			Field:    v.Field,
 			ValueMap: v.ValueMap,
 		})
 	}
@@ -259,11 +274,10 @@ func dbQuerySrcType(ctx context.Context, query *db.Queries, srcTypeId string) (*
 	var iconConfigs []*tdf_objectv1.SrcTypeMetadataMapFieldConfig
 	for _, v := range metadata.MapFields.IconConfig {
 		iconConfigs = append(iconConfigs, &tdf_objectv1.SrcTypeMetadataMapFieldConfig{
-			Field: v.Field,
+			Field:    v.Field,
 			ValueMap: v.ValueMap,
 		})
 	}
-
 
 	protoSrcType := &tdf_objectv1.SrcType{
 		Id:         srcType.ID,
@@ -279,13 +293,12 @@ func dbQuerySrcType(ctx context.Context, query *db.Queries, srcTypeId string) (*
 				Details: metadata.DisplayFields.Details,
 			},
 			MapFields: &tdf_objectv1.SrcTypeMetadataMapFields{
-				IconDefault: metadata.MapFields.IconDefault,
-				IconConfig: iconConfigs,
+				IconDefault:  metadata.MapFields.IconDefault,
+				IconConfig:   iconConfigs,
 				ColorDefault: metadata.MapFields.ColorDefault,
-				ColorConfig: colorConfigs,
+				ColorConfig:  colorConfigs,
 			},
 		},
 	}
-
 	return protoSrcType, nil
 }

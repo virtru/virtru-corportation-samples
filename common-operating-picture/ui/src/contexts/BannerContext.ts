@@ -1,5 +1,6 @@
 import { Dispatch, SetStateAction, createContext } from 'react';
 import { mapColors } from '@/pages/SourceTypes/helpers/markers';
+import { TdfObjectResponse } from '@/hooks/useRpcClient';
 
 export const extractValues = (values: string[] | object[] | string |  object) => {
     const vals = Array.isArray(values) ? values : [values];
@@ -19,7 +20,7 @@ export const BannerClassification = Classifications.reduce((classification, c) =
 }, {} as { [key: string]: string });
 
 type BannerContextType = {
-    classification: string, 
+    classification: string,
     setClassification: Dispatch<SetStateAction<string>>,
     needToKnow: string,
     setNeedToKnow: Dispatch<SetStateAction<string>>,
@@ -29,11 +30,15 @@ type BannerContextType = {
     setSearchIsActive: Dispatch<SetStateAction<boolean>>,
     hasResults: boolean,
     setHasResults: Dispatch<SetStateAction<boolean>>,
+    activeEntitlements: Set<string>,
+    setActiveEntitlements: Dispatch<SetStateAction<Set<string>>>,
+    tdfObjects: TdfObjectResponse[];
+    setTdfObjects: Dispatch<SetStateAction<TdfObjectResponse[]>>;
 };
 
 export const BannerContext = createContext<BannerContextType>(
-    { 
-        classification: '', 
+    {
+        classification: '',
         setClassification: () => {},
         needToKnow: '',
         setNeedToKnow: () => {},
@@ -42,6 +47,10 @@ export const BannerContext = createContext<BannerContextType>(
         searchIsActive: false,
         setSearchIsActive: () => {},
         hasResults: false,
-        setHasResults: () => {}, 
+        setHasResults: () => {},
+        activeEntitlements: new Set(),
+        setActiveEntitlements: () => {},
+        tdfObjects: [],
+        setTdfObjects: () => {},
     },
 );

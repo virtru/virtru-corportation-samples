@@ -66,6 +66,7 @@ type Props = {
 };
 
 export function SourceTypeProvider({ children, srcType }: Props) {
+
   const [createFormSchema, setCreateFormSchema] = useState<DynamicFormSchema>({ form: {}, ui: {} });
   const [searchFormSchema, setSearchFormSchema] = useState<DynamicFormSchema>({ form: {}, ui: {} });
 
@@ -81,7 +82,40 @@ export function SourceTypeProvider({ children, srcType }: Props) {
       throw new Error('SourceType does not have a form schema');
     }
 
-    const createFormSchema: RJSFSchema = formSchema.toJson();
+    // ✅ Clone schema to safely mutate
+    let createFormSchema: RJSFSchema = JSON.parse(JSON.stringify(formSchema.toJson()));
+
+    // ✅ Log original schema for debugging
+    console.log('CreateFormSchema:', JSON.stringify(createFormSchema, null, 2));
+    console.log('Definitions:', JSON.stringify(createFormSchema.definitions, null, 2));
+    
+    //const createFormSchema: RJSFSchema = formSchema.toJson();
+    // 🚨 Strip fields from BOTH schemas
+    const problematicFields = [ 'temp'
+      //'attrRelTo' //'attrNeedToKnow',
+      //'count' //'description', 'documentId', 'sourceId',// 'stage', 'siteId'
+    ];
+
+    console.log('🟠 Original CreateFormSchema:', Object.keys(createFormSchema.properties || {}));
+
+    // 🧹 Remove allOf
+    //if (createFormSchema.allOf) {
+    //  console.warn('⚠️ Removing allOf from createFormSchema for testing');
+    //  delete createFormSchema.allOf;
+    //}
+
+    // 🧹 Strip readOnly and remove problematic fields from createFormSchema
+    Object.entries(createFormSchema.properties || {}).forEach(([key, prop]: [string, any]) => {
+      if (prop?.readOnly) {
+        console.warn(`⚠️ readOnly from "${key}"`);
+        //delete prop.readOnly;
+      }
+
+      if (problematicFields.includes(key)) {
+        console.warn(`🚫 Removing problematic field from createFormSchema: "${key}"`);
+        delete createFormSchema.properties?.[key];
+      }
+    });
 
     const searchFormSchema: RJSFSchema = {
       type: 'object',
@@ -99,7 +133,29 @@ export function SourceTypeProvider({ children, srcType }: Props) {
         },
         // pull property definitions for searchable fields
         ...(metadata?.searchFields || []).reduce((schema: any, field: string) => {
-          schema[field] = createFormSchema.properties[field];
+
+          if (problematicFields.includes(field)) {
+            console.warn(`Skipping potentially problematic field: ${field}`);
+            return schema;
+          }
+
+
+          const prop = createFormSchema.properties?.[field];
+
+          if (!prop) {
+          console.warn(`⚠️ Field "${field}" is not defined in createFormSchema.properties`);
+          return schema;
+          }
+
+
+          try {
+            console.log(`Field: ${field}`, JSON.stringify(prop, null, 2));
+          } catch (err) {
+            console.error(`Could not stringify field "${field}" — possible circular reference`, field);
+          }
+
+          schema[field] = prop;
+          //schema[field] = createFormSchema.properties[field];
           return schema;
         }, {}),
       },
@@ -120,6 +176,10 @@ export function SourceTypeProvider({ children, srcType }: Props) {
     searchUiSchema.endDate = {
       'ui:widget': DateTimePickerWidget,
     };
+
+    //Logs
+    console.log('✅ Final createFormSchema:', Object.keys(createFormSchema.properties || {}));
+    console.log('✅ Final searchFormSchema:', Object.keys(searchFormSchema.properties || {}));
 
     setCreateFormSchema({
       form: createFormSchema,

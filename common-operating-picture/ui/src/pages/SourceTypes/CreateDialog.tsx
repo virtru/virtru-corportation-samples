@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useContext } from 'react';
 import { LatLng } from 'leaflet';
 import { useTDF } from '@/hooks/useTdf';
 import { useRpcClient } from '@/hooks/useRpcClient';
@@ -17,6 +17,8 @@ import { CreateTdfObjectRequest } from '@/proto/tdf_object/v1/tdf_object_pb';
 import { PartialMessage, Timestamp } from '@bufbuild/protobuf';
 import dayjs from 'dayjs';
 import { Alert } from '@mui/material';
+import { BannerContext } from '@/contexts/BannerContext';
+import { checkAndSetUnavailableAttributes } from '@/utils/attributes';
 
 type Props = {
   open: boolean;
@@ -30,7 +32,26 @@ const formIdPrefix = 'srcTypeForm';
 export function CreateDialog({ open, onClose }: Props) {
   const [mapPosition, setMapPosition] = useState<LatLng>();
   const [ unavailableAttrs, setUnavailAttrs ] = useState<string[]>([]);
-  const [ entitlements, setEntitlements ] = useState<Set<string>>(new Set());
+  //const [ entitlements, setEntitlements ] = useState<Set<string>>(new Set());
+
+  // New state to store the original banner values
+  const [originalClassification, setOriginalClassification] = useState('');
+  const [originalNeedToKnow, setOriginalNeedToKnow] = useState('');
+  const [originalRelTo, setOriginalRelTo] = useState('');
+
+  const {
+    setClassification,
+    setNeedToKnow,
+    setRelTo,
+    classification: activeClassification,
+    needToKnow: activeNeedToKnow,
+    relTo: activeRelTo,
+    activeEntitlements,
+  } = useContext(BannerContext);
+
+  //console.log('Current Active Classification:', activeClassification);
+  //console.log('Current Active Need to Know:', activeNeedToKnow);
+  //console.log('Current Active Rel To:', activeRelTo);
 
   const formRef = useRef<Form<any, RJSFSchema> | null>(null);
 
@@ -38,6 +59,24 @@ export function CreateDialog({ open, onClose }: Props) {
   const { id, geoField, attrFields, searchFields, tsField, createFormSchema } = useSourceType();
   const { encrypt } = useTDF();
   const { createTdfObject } = useRpcClient();
+
+  useEffect(() => {
+    if (open) {
+      setOriginalClassification(activeClassification);
+      setOriginalNeedToKnow(activeNeedToKnow);
+      setOriginalRelTo(activeRelTo);
+    }
+  }, [open]);
+
+  const handleCancel = () => {
+    // Restore the classification, needToKnow, and relTo from the stored originals
+    setClassification(originalClassification);
+    setNeedToKnow(originalNeedToKnow);
+    setRelTo(originalRelTo);
+
+    // Then call the original onClose handler
+    onClose();
+  };
 
   const handleMapPositionChange = (newPosition: LatLng) => {
     if (!formRef.current) {
@@ -64,25 +103,13 @@ export function CreateDialog({ open, onClose }: Props) {
   const handleChange = (data: IChangeEvent<any, RJSFSchema>, fieldName?: string) => {
     const { formData } = data;
 
-    if (!formData) {
-      return;
-    }
-
-    const pendingUnavailAttrs = Object.entries(formData).reduce((acc: string[], [key, value]) => {
-      if (attrFields?.includes(key)) {
-        if (!Array.isArray(value)) {
-          value = [value as string];
-        } 
-        (value as string[]).forEach((v: string) => {
-          if (v && !entitlements.has(v)) {
-            acc.push(v);
-          }
-        });
-      }
-      return acc;
-    }, []);
-
-    setUnavailAttrs(pendingUnavailAttrs);
+    // Use new util in attributes.ts
+    checkAndSetUnavailableAttributes(
+        data,
+        attrFields,
+        activeEntitlements,
+        setUnavailAttrs
+    );
 
     if (!geoField) {
       return;
@@ -107,6 +134,12 @@ export function CreateDialog({ open, onClose }: Props) {
     const { formData } = data;
     if (!formData) {
       return;
+    }
+
+    // Disable search if unauthorized entitlements
+    if (unavailableAttrs.length > 0) {
+        console.warn('Attempted search with missing entitlements. Submission blocked.');
+        return;
     }
 
     try {
@@ -173,15 +206,16 @@ export function CreateDialog({ open, onClose }: Props) {
         </Alert>
       );
     }
-    
-    
+
+
     /**
      * todo: Hack for loading state during entitlements retrieval
-     * 
+     *
      * The entitlements are loaded and will either be a populated or empty set, and
      * the 'loading' entry will be removed at that point.
      */
-    if (entitlements.has('loading')) {
+    // Use active enetilements
+    if (activeEntitlements.size === 0 && user?.entitlements?.length) {
       return (
         <Alert severity="info" variant="filled">
           <strong>Loading entitlements...</strong>
@@ -203,11 +237,16 @@ export function CreateDialog({ open, onClose }: Props) {
     return null;
   };
 
+  /*
   useEffect(() => {
     if (user) {
-      setEntitlements(new Set(user.entitlements));
+      updateEntitlementsFromUser(user, setEntitlements);
+
+      //Printing locally read entitlements
+      console.log('User Entitlements:', user.entitlements);
     }
   }, [user]);
+  */
 
   return (
     <Dialog open={open} fullScreen sx={{ margin: '5%' }}>
@@ -238,7 +277,7 @@ export function CreateDialog({ open, onClose }: Props) {
         </Grid>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={handleCancel}>Cancel</Button>
         <Button variant="contained" onClick={() => formRef.current?.submit()}>
           Create
         </Button>

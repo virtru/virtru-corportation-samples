@@ -223,7 +223,8 @@ func createGrpcServer(server *TdfObjectServer) *http.Server {
 
 	// Create a new CORS middleware
 	mux.Handle(path, cors.New(cors.Options{
-		AllowedOrigins: []string{server.Config.Service.CORSOrigin},
+		//AllowedOrigins: []string{server.Config.Service.CORSOrigin},
+		AllowedOrigins: []string{"*"},
 		AllowedMethods: connectcors.AllowedMethods(),
 		AllowedHeaders: append(connectcors.AllowedHeaders(), "Authorization"),
 		ExposedHeaders: connectcors.ExposedHeaders(),

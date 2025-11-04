@@ -15,6 +15,8 @@ import { LatLng, Map } from 'leaflet';
 import { TimestampSelector } from '@/proto/tdf_object/v1/tdf_object_pb';
 import dayjs from 'dayjs';
 import { Timestamp } from '@bufbuild/protobuf';
+import { useAuth } from '@/hooks/useAuth';
+import { checkAndSetUnavailableAttributes } from '@/utils/attributes';
 
 const validator = customizeValidator<any>();
 const SearchForm = withTheme<any, RJSFSchema>(RJSFFormMuiTheme);
@@ -29,15 +31,40 @@ type QueryParamState = {
 
 type Props = {
   map: Map | null;
-  onSearch: (results: TdfObjectResponse[]) => void;
+  //onSearch: (results: TdfObjectResponse[]) => void;
 }
 
-export function SearchFilter({ map, onSearch }: Props) {
+export function SearchFilter({ map }: Props) { //onSearch removed
   const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // State to store original banner values
+  const [originalClassification, setOriginalClassification] = useState('');
+  const [originalNeedToKnow, setOriginalNeedToKnow] = useState('');
+  const [originalRelTo, setOriginalRelTo] = useState('');
+
+  // Define entitlements and unavailableAttrs state correctly
+  const [unavailableAttrs, setUnavailAttrs] = useState<string[]>([]);
+  //const [entitlements, setEntitlements] = useState<Set<string>>(new Set());
+
+  // Use useAuth to get user and error status
+  const { user, error: authCtxError } = useAuth();
+
   const { id: srcTypeId, searchFormSchema } = useSourceType();
-  const { setClassification, setNeedToKnow, setRelTo, setSearchIsActive, setHasResults } = useContext(BannerContext);
+
+  const {
+    setClassification,
+    setNeedToKnow,
+    setRelTo,
+    setHasResults,
+    setSearchIsActive, // Need to pull setSearchIsActive back in
+    classification: activeClassification, // Need current values to save them
+    needToKnow: activeNeedToKnow,
+    relTo: activeRelTo,
+    activeEntitlements,
+    setTdfObjects,
+  } = useContext(BannerContext);
+
   const { queryTdfObjects } = useRpcClient();
 
   const formRef = useRef<Form<any, RJSFSchema> | null>(null);
@@ -46,16 +73,93 @@ export function SearchFilter({ map, onSearch }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
 
+  // Handler to open the menu and save current banner state
+  const handleOpenMenu = (e: React.MouseEvent<HTMLButtonElement>) => {
+    // Save current active banner values
+    setOriginalClassification(activeClassification);
+    setOriginalNeedToKnow(activeNeedToKnow);
+    setOriginalRelTo(activeRelTo);
+
+    setSearchIsActive(true); // Update banner context state
+    setMenuAnchorEl(e.currentTarget); // Open the popover
+  };
+
+  // Handler to close the menu, restoring original banner state
+  const handleCancel = () => {
+    // Restore the classification, needToKnow, and relTo from the stored originals
+    setClassification(originalClassification);
+    setNeedToKnow(originalNeedToKnow);
+    setRelTo(originalRelTo);
+
+    setSearchIsActive(false); // Update banner context state
+    setMenuAnchorEl(null); // Close the popover
+  };
+
+  const { geoField, attrFields } = useSourceType();
+
+  const renderAttributesAlert = () => {
+    if (authCtxError) {
+      return (
+        <Alert severity="error" variant="filled" sx={{ mt: 2 }}>
+          <strong>Error loading entitlements, please reauthenticate to try again.</strong>
+        </Alert>
+      );
+    }
+
+    // Add logic for checking entitlements loading state
+    if (activeEntitlements.size === 0 && user?.entitlements?.length) {
+      return (
+        <Alert severity="info" variant="filled" sx={{ mt: 2 }}>
+          <strong>Loading entitlements...</strong>
+        </Alert>
+      );
+    }
+
+    if (unavailableAttrs.length) {
+      return (
+        <Alert severity="warning" variant="filled" sx={{ mt: 2 }}>
+          <strong>The following attributes are not available to you:</strong>
+          {unavailableAttrs.map(attr => (
+            <li key={attr}>{attr}</li>
+          ))}
+        </Alert>
+      );
+    }
+
+    return null;
+  };
+
+  const handleChange = (data: IChangeEvent<any, RJSFSchema>) => {
+    // Use new util in attributes.ts
+    checkAndSetUnavailableAttributes(
+        data,
+        attrFields,
+        activeEntitlements,
+        setUnavailAttrs
+    );
+
+    if (!geoField) {
+      return;
+    }
+  };
+
+  //useEffect(() => {
+  //  updateEntitlementsFromUser(user, setEntitlements);
+  //}, [user]);
+
   const updateBanner = (response: TdfObjectResponse[]) => {
     let classPriority = 0;
     let needToKnow = new Set();
     let relTo = new Set();
+
     setHasResults(true);
+
     response.forEach((o) => {
       classPriority = Math.max(classPriority, ClassificationPriority[extractValues(o.decryptedData.attrClassification) as keyof typeof ClassificationPriority]);
       needToKnow = new Set([...needToKnow, ...extractValues(o.decryptedData.attrNeedToKnow || []).split(', ')]);
       relTo = new Set([...relTo, ...extractValues(o.decryptedData.attrRelTo || []).split(', ')]);
     });
+
     setClassification(Classifications[classPriority]);
     setNeedToKnow([...needToKnow].join(', '));
     setRelTo([...relTo].join(', '));
@@ -69,22 +173,22 @@ export function SearchFilter({ map, onSearch }: Props) {
       const dayJsValue = dayjs(startDate);
       tsRange.greaterOrEqualTo = Timestamp.fromDate(dayJsValue.toDate());
     }
-    
+
     if (endDate) {
       const dayJsValue = dayjs(endDate);
       tsRange.lesserOrEqualTo = Timestamp.fromDate(dayJsValue.toDate());
     }
-    
+
     let geoLocation = '';
     if (map) {
       // todo: prob a simpler way to create the bbox to pass to RPC request, but it works
-      
+
       const bounds = map.getBounds();
       const nw = bounds.getNorthWest();
       const ne = bounds.getNorthEast();
       const se = bounds.getSouthEast();
       const sw = bounds.getSouthWest();
-      
+
       const bboxPolygon: GeoJSON.Polygon = {
         type: 'Polygon',
         coordinates: [
@@ -120,6 +224,36 @@ export function SearchFilter({ map, onSearch }: Props) {
       return;
     }
 
+    // Block search if unavliable attributes
+    if (unavailableAttrs.length > 0) {
+        console.warn('Attempted search with missing entitlements. Submission blocked.');
+        return;
+    }
+
+    /* Unused method for passing arry of classifications to backend to get all subordiante class items from query
+    const { attrClassification, startDate, endDate, ...searchJson } = searchFormData;
+    console.log("Attribute Class", attrClassification)
+
+    const simpleName = attrClassification? attrClassification.split('/').pop()?.toUpperCase() : undefined;
+
+    console.log("Simple Name:", simpleName);
+
+    let classificationsToSearch: string[] = [];
+    if (simpleName.length > 0) {
+        classificationsToSearch = getSubordinateClassifications(simpleName);
+
+    }
+    console.log("Attribute to search:", classificationsToSearch)
+
+    // Replace the single classification string with the expanded array in the JSON payload
+    if (classificationsToSearch.length > 0) {
+        searchJson.attrClassification = classificationsToSearch;
+        console.log("Search Class:", searchJson.attrClassification)
+    }
+
+    const queryPayload = { startDate, endDate, ...searchJson };
+    */
+
     try {
       setError('');
       setLoading(true);
@@ -131,9 +265,15 @@ export function SearchFilter({ map, onSearch }: Props) {
         updateBanner(response);
       }
 
+      //Added
+      setSearchIsActive(false);
+
       setMenuAnchorEl(null);
       setFormData(searchFormData);
-      onSearch(response);
+
+      setTdfObjects(response);
+      //onSearch(response);
+
       setSearchParams(params => {
         const queryState: QueryParamState = {
           formData: searchFormData,
@@ -150,7 +290,8 @@ export function SearchFilter({ map, onSearch }: Props) {
       console.error('Error querying TDF objects:', err);
       setError('Server error encountered, please try again later.');
       setHasResults(false);
-      onSearch([]);
+      setTdfObjects([]);
+      //onSearch([]);
       setSearchParams(params => {
         params.delete('q');
         return params;
@@ -162,7 +303,7 @@ export function SearchFilter({ map, onSearch }: Props) {
 
   useEffect(() => {
     const query = searchParams.get('q');
-    
+
     if (!query) {
       setFormData({});
       return;
@@ -187,17 +328,19 @@ export function SearchFilter({ map, onSearch }: Props) {
     }
   }, [searchParams, map]);
 
-  useEffect(() => {
-    setSearchIsActive(Boolean(menuAnchorEl));
-  }), [menuAnchorEl];
+   useEffect(() => {
+     setSearchIsActive(Boolean(menuAnchorEl));
+   }), [menuAnchorEl];
 
   return (
     <>
-      <Button variant="contained" onClick={e => setMenuAnchorEl(e.currentTarget)} startIcon={<FilterAlt />}>Filter</Button>
-      <Popover 
+      {/* <Button variant="contained" onClick={e => setMenuAnchorEl(e.currentTarget)} startIcon={<FilterAlt />}>Filter</Button> */}
+      <Button variant="contained" onClick={handleOpenMenu} startIcon={<FilterAlt />}>Filter</Button>
+      <Popover
         open={Boolean(menuAnchorEl)}
         anchorEl={menuAnchorEl}
-        onClose={() => setMenuAnchorEl(null)}
+        // onClose={() => setMenuAnchorEl(null)}
+        onClose={handleCancel}
         anchorOrigin={{
           vertical: 'bottom',
           horizontal: 'left',
@@ -208,31 +351,14 @@ export function SearchFilter({ map, onSearch }: Props) {
             Results limited to data within viewable map bounds
           </Alert>
           {error && <Alert severity="error" variant="filled" sx={{ mt: 2 }}>{error}</Alert>}
-          <SearchForm 
+          {renderAttributesAlert()}
+          <SearchForm
             schema={searchFormSchema.form}
             uiSchema={searchFormSchema.ui}
             formData={formData}
             ref={formRef}
             validator={validator}
-            onChange={(data, id) => {
-              id = id || ''.replace('root_', '');
-              let fx;
-              switch(id) {
-                case 'attrClassification':
-                  fx = setClassification;
-                  break;
-                case 'attrNeedToKnow':
-                  fx = setNeedToKnow;
-                  break;
-                case 'attrRelTo':
-                  fx = setRelTo;
-                  break;
-                default:
-                  fx = () => {};
-              }
-
-              fx(data.formData[id]);
-            }}
+            onChange={handleChange}
             onSubmit={handleSearch}
             templates={{ ErrorListTemplate }}
             noHtml5Validate
@@ -240,6 +366,7 @@ export function SearchFilter({ map, onSearch }: Props) {
           <Button variant="contained" onClick={() => formRef.current?.submit()} sx={{ mt: 2 }}>
             Search
           </Button>
+          <Button onClick={handleCancel}>Cancel</Button>
           <Backdrop open={loading} sx={{ position: 'absolute', zIndex: 10 }}>
             <Box display="flex" alignItems="center" gap={1}>
               <CircularProgress size={35} thickness={8} /> loading...

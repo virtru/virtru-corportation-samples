@@ -1,11 +1,18 @@
 import { AppBar, Avatar, Menu, MenuItem, Toolbar, Typography, IconButton, Divider, Stack } from '@mui/material';
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { BannerContext } from '@/contexts/BannerContext';
+import { ClassificationSelectorModal } from '@/utils/ClassificationSelectorModal';
 
 export function TopBar() {
   const { user, signOut } = useAuth();
+
+  //console.log('1. TopBar Raw Entitlements:', user?.entitlements);
+
   const [accountMenuAnchor, setAccountMenuAnchor] = useState<null | HTMLElement>(null);
   const accountMenuOpen = Boolean(accountMenuAnchor);
+  useContext(BannerContext);
+  const [isClassificationModalOpen, setIsClassificationModalOpen] = useState(false);
 
   // Build initials from the user name if they have one
   const initials = user?.name ? user.name
@@ -14,7 +21,7 @@ export function TopBar() {
     .join('') : '';
 
   const handleClick = (
-    event: React.MouseEvent<HTMLButtonElement>, 
+    event: React.MouseEvent<HTMLButtonElement>,
     anchorSetter: React.Dispatch<React.SetStateAction<HTMLElement | null>>,
   ) => {
     anchorSetter(event.currentTarget);
@@ -25,6 +32,18 @@ export function TopBar() {
   ) => {
     anchorSetter(null);
   };
+
+  const handleSetClassification = () => {
+    // Open the modal and close the menu
+    handleClose(setAccountMenuAnchor);
+    setIsClassificationModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setIsClassificationModalOpen(false);
+  };
+
+  const userEntitlements = user?.entitlements || [];
 
   return (
     <>
@@ -44,11 +63,18 @@ export function TopBar() {
           </Stack>
         </MenuItem>
         <Divider />
+        <MenuItem onClick={handleSetClassification}>Set Classification</MenuItem>
         <MenuItem onClick={() => {
             signOut();
             handleClose(setAccountMenuAnchor);
           }}>Logout</MenuItem>
       </Menu>
+
+      <ClassificationSelectorModal
+        isOpen={isClassificationModalOpen}
+        onClose={handleModalClose}
+        userEntitlements={userEntitlements} // Pass the full entitlements
+      />
     </>
   );
 }

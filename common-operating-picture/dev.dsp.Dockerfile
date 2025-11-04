@@ -1,11 +1,9 @@
 # syntax=docker/dockerfile:1.6
 # Set your runtime image (override with --build-arg)
-#ARG DSP_IMAGE=us-docker.pkg.dev/prj-infra-automation-ktbz/internal/data-security-platform:v2.6.2
 ARG DSP_IMAGE=localhost:5000/virtru/data-security-platform:v2.6.2
-#ARG DSP_IMAGE=us-docker.pkg.dev/prj-infra-automation-ktbz/internal/data-security-platform:v2.5.0-build.e8c8e8a
 
 # ---------- prep stage: build CA bundle & stage files ----------
-FROM alpine:3.20.2 AS prep
+FROM alpine:latest AS prep
 WORKDIR /work
 
 # CA tools and trust store
@@ -14,9 +12,7 @@ RUN apk add --no-cache ca-certificates && update-ca-certificates
 # TLS materials
 # (Only certificates belong in /usr/local/share/ca-certificates; keep private keys elsewhere.)
 COPY ./dsp-keys/local-dsp.virtru.com.pem      /usr/local/share/ca-certificates/local-dsp.virtru.com.crt
-#COPY ./dsp-keys/local-dsp.virtru.com.key.pem  /usr/local/share/ca-certificates/local-dsp.virtru.com.key.pem
 COPY ./dsp-keys/local-dsp.virtru.com.key.pem  /work/dsp-keys/local-dsp.virtru.com.key.pem
-#COPY ./dsp-keys/local-dsp.virtru.com.pem      /work/dsp-keys/ca-certificates/local-dsp.virtru.com.crt
 
 
 # Merge our cert into the system bundle and stash it to copy later
@@ -55,5 +51,3 @@ COPY --from=prep /work/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
 ENTRYPOINT ["/usr/bin/dsp"]
-
-

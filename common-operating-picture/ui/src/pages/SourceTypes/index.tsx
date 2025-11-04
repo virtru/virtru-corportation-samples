@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { LayersControl, MapContainer, TileLayer } from 'react-leaflet';
 import { LatLng, Map } from 'leaflet';
 import { Box, Button, Grid } from '@mui/material';
 import { AddCircle } from '@mui/icons-material';
-import { TdfObjectResponse, useRpcClient } from '@/hooks/useRpcClient';
+import { useRpcClient } from '@/hooks/useRpcClient';
 import { PageTitle } from '@/components/PageTitle';
 import { SourceTypeProvider } from './SourceTypeProvider';
 import { CreateDialog } from './CreateDialog';
@@ -14,6 +14,7 @@ import { SearchResults } from './SearchResults';
 import { SrcType } from '@/proto/tdf_object/v1/tdf_object_pb';
 import { config } from '@/config';
 import { TdfObjectsMapLayer } from '@/components/Map/TdfObjectsMapLayer';
+import { BannerContext } from '@/contexts/BannerContext';
 
 export function SourceTypes() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -27,7 +28,9 @@ export function SourceTypes() {
   const { getSrcType } = useRpcClient();
   const [srcType, setSrcType] = useState<SrcType>();
 
-  const [tdfObjects, setTdfObjects] = useState<TdfObjectResponse[]>([]);
+  // New tdfobject handling
+  //const [tdfObjects, setTdfObjects] = useState<TdfObjectResponse[]>([]);
+  const { tdfObjects, setTdfObjects } = useContext(BannerContext);
 
   const fetchSrcType = async (id: string) => {
     try {
@@ -65,7 +68,7 @@ export function SourceTypes() {
   };
 
   const handleFlyToClick = ({ lat, lng }: LatLng) => {
-    if (!map) { 
+    if (!map) {
       return;
     }
 
@@ -97,7 +100,7 @@ export function SourceTypes() {
 
   return (
     <>
-      <PageTitle 
+      <PageTitle
         title="Source Types"
         subContent={selectable ? <SourceTypeSelector value={srcTypeId} onChange={handleSrcTypeIdChange} /> : null} />
       <SourceTypeProvider srcType={srcType}>
@@ -115,7 +118,7 @@ export function SourceTypes() {
           </Grid>
           <Grid item xs={12} md={5}>
             <Box display="flex" gap={1} mb={2}>
-              <SearchFilter map={map} onSearch={results => setTdfObjects(results)} />
+              <SearchFilter map={map} />
               <Button variant="contained" color="primary" onClick={handleDialogOpen} startIcon={<AddCircle />}>New</Button>
             </Box>
             <SearchResults tdfObjects={tdfObjects} onFlyToClick={handleFlyToClick} />

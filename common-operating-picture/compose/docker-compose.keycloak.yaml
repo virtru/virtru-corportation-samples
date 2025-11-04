@@ -5,7 +5,7 @@ services:
   keycloak:
     # This is kc 24.0.1 with opentdf protocol mapper on board
     #image: us-docker.pkg.dev/prj-infra-automation-ktbz/remote-proxy-dockerhub/keycloak/keycloak:24.0.5 #Access Denied, Requires Creds
-    image: keycloak/keycloak:25.0
+    image: keycloak/keycloak:25.0 #cgr.dev/chainguard/keycloak@sha256:d056c4068fcbd5d43c1181a1a76b7a99c1653b249e437c5ce1b256c9792fdaaa
     restart: always
     command: ['start-dev']
     environment:

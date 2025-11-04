@@ -1,15 +1,23 @@
 # Local development
 db-data
-#dsp.yaml
+dsp.yaml
 dsp-keys
 
 # Binary
 dsp-cop
-
+geos-*.apk
+geos/
 # Sensitive or environment-specific configuration
 config.yaml
 config.docker.yaml
+etc/ 
 
 # Nifi
 **/truststore
 
+# IDE
+.vscode
+.idea
+
+# Bundle
+virtru-dsp-bundle-*
