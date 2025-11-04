@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useContext } from 'react';
 import { LatLng } from 'leaflet';
 import { useTDF } from '@/hooks/useTdf';
 import { useRpcClient } from '@/hooks/useRpcClient';
@@ -13,10 +13,12 @@ import { customizeValidator } from '@rjsf/validator-ajv8';
 import { Theme as RJSFFormMuiTheme } from '@rjsf/mui';
 import { getAttributes } from '@/utils/attributes';
 import { Country, countryFromPoint } from '@/utils/countries';
-import { CreateTdfObjectRequest } from '@/proto/tdf_object/v1/tdf_object_pb';
+import { CreateTdfObjectRequest } from '@/proto/tdf_object/v1/tdf_object_pb.ts';
 import { PartialMessage, Timestamp } from '@bufbuild/protobuf';
 import dayjs from 'dayjs';
 import { Alert } from '@mui/material';
+import { BannerContext } from '@/contexts/BannerContext';
+import { checkAndSetUnavailableAttributes } from '@/utils/attributes';
 
 type Props = {
   open: boolean;
@@ -30,7 +32,10 @@ const formIdPrefix = 'srcTypeForm';
 export function CreateDialog({ open, onClose }: Props) {
   const [mapPosition, setMapPosition] = useState<LatLng>();
   const [ unavailableAttrs, setUnavailAttrs ] = useState<string[]>([]);
-  const [ entitlements, setEntitlements ] = useState<Set<string>>(new Set());
+
+  const {
+    activeEntitlements,
+  } = useContext(BannerContext);
 
   const formRef = useRef<Form<any, RJSFSchema> | null>(null);
 
@@ -38,6 +43,10 @@ export function CreateDialog({ open, onClose }: Props) {
   const { id, geoField, attrFields, searchFields, tsField, createFormSchema } = useSourceType();
   const { encrypt } = useTDF();
   const { createTdfObject } = useRpcClient();
+
+  const handleCancel = () => {
+    onClose();
+  };
 
   const handleMapPositionChange = (newPosition: LatLng) => {
     if (!formRef.current) {
@@ -64,25 +73,13 @@ export function CreateDialog({ open, onClose }: Props) {
   const handleChange = (data: IChangeEvent<any, RJSFSchema>, fieldName?: string) => {
     const { formData } = data;
 
-    if (!formData) {
-      return;
-    }
-
-    const pendingUnavailAttrs = Object.entries(formData).reduce((acc: string[], [key, value]) => {
-      if (attrFields?.includes(key)) {
-        if (!Array.isArray(value)) {
-          value = [value as string];
-        } 
-        (value as string[]).forEach((v: string) => {
-          if (v && !entitlements.has(v)) {
-            acc.push(v);
-          }
-        });
-      }
-      return acc;
-    }, []);
-
-    setUnavailAttrs(pendingUnavailAttrs);
+    // Use new util in attributes.ts
+    checkAndSetUnavailableAttributes(
+        data,
+        attrFields,
+        activeEntitlements,
+        setUnavailAttrs
+    );
 
     if (!geoField) {
       return;
@@ -109,6 +106,12 @@ export function CreateDialog({ open, onClose }: Props) {
       return;
     }
 
+    // Disable submit if unauthorized entitlements
+    if (unavailableAttrs.length > 0) {
+        console.warn('Attempted search with missing entitlements. Submission blocked.');
+        return;
+    }
+
     try {
       const attrs: string[] = [];
       for (const field of attrFields || []) {
@@ -116,6 +119,7 @@ export function CreateDialog({ open, onClose }: Props) {
           attrs.push(...getAttributes(formData[field]));
         }
       }
+
       const tdfBlob = await encrypt(JSON.stringify(formData), attrs);
 
       const tdfObject: PartialMessage<CreateTdfObjectRequest> = {
@@ -154,11 +158,8 @@ export function CreateDialog({ open, onClose }: Props) {
         const utcDate = dayjs(formData[tsField]).utc().toDate();
         tdfObject.ts = Timestamp.fromDate(utcDate);
       }
+      await createTdfObject(tdfObject);
 
-      const response = await createTdfObject(tdfObject);
-      console.debug('Form submission successful:', response);
-
-      // todo: do we need to pass the created object back to the parent?
       onClose();
     } catch (err) {
       console.error('Form submission failed:', err);
@@ -173,15 +174,16 @@ export function CreateDialog({ open, onClose }: Props) {
         </Alert>
       );
     }
-    
-    
+
+
     /**
      * todo: Hack for loading state during entitlements retrieval
-     * 
+     *
      * The entitlements are loaded and will either be a populated or empty set, and
      * the 'loading' entry will be removed at that point.
      */
-    if (entitlements.has('loading')) {
+    // Use active enetilements
+    if (activeEntitlements.size === 0 && user?.entitlements?.length) {
       return (
         <Alert severity="info" variant="filled">
           <strong>Loading entitlements...</strong>
@@ -202,12 +204,6 @@ export function CreateDialog({ open, onClose }: Props) {
 
     return null;
   };
-
-  useEffect(() => {
-    if (user) {
-      setEntitlements(new Set(user.entitlements));
-    }
-  }, [user]);
 
   return (
     <Dialog open={open} fullScreen sx={{ margin: '5%' }}>
@@ -238,7 +234,7 @@ export function CreateDialog({ open, onClose }: Props) {
         </Grid>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={handleCancel}>Cancel</Button>
         <Button variant="contained" onClick={() => formRef.current?.submit()}>
           Create
         </Button>

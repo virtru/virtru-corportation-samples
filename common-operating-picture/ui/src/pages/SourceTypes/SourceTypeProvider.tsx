@@ -66,6 +66,7 @@ type Props = {
 };
 
 export function SourceTypeProvider({ children, srcType }: Props) {
+
   const [createFormSchema, setCreateFormSchema] = useState<DynamicFormSchema>({ form: {}, ui: {} });
   const [searchFormSchema, setSearchFormSchema] = useState<DynamicFormSchema>({ form: {}, ui: {} });
 
@@ -81,7 +82,8 @@ export function SourceTypeProvider({ children, srcType }: Props) {
       throw new Error('SourceType does not have a form schema');
     }
 
-    const createFormSchema: RJSFSchema = formSchema.toJson();
+    // Clone schema to safely mutate
+    let createFormSchema: RJSFSchema = JSON.parse(JSON.stringify(formSchema.toJson()));
 
     const searchFormSchema: RJSFSchema = {
       type: 'object',
@@ -99,11 +101,18 @@ export function SourceTypeProvider({ children, srcType }: Props) {
         },
         // pull property definitions for searchable fields
         ...(metadata?.searchFields || []).reduce((schema: any, field: string) => {
-          schema[field] = createFormSchema.properties[field];
+          const prop = createFormSchema.properties?.[field];
+
+          if (!prop) {
+          console.warn(`Field "${field}" is not defined in createFormSchema.properties`);
+          return schema;
+          }
+
+          schema[field] = prop;
           return schema;
         }, {}),
       },
-    }; 
+    };
 
     const createUiSchema = buildUiSchema(uiSchema);
 
@@ -130,7 +139,7 @@ export function SourceTypeProvider({ children, srcType }: Props) {
       form: searchFormSchema,
       ui: searchUiSchema,
     });
-    
+
   }, [srcType]);
 
   if (!srcType) {

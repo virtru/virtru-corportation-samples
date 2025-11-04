@@ -1,7 +1,6 @@
 # check=skip=SecretsUsedInArgOrEnv
 # Node 22.2.0
-FROM cgr.dev/chainguard/node@sha256:c9f5d50b07504754da0140e0dc0a39c7ab9b55cf35dff827ff6d0876d054e7e7 AS ui-builder
-
+FROM node:22-alpine AS ui-builder
 # Define frontend Vite build args and read them in from the environment
 ARG VITE_TILE_SERVER_URL
 ARG VITE_GRPC_SERVER_URL
@@ -12,6 +11,7 @@ ARG VITE_DSP_KC_CLIENT_ID
 ARG VITE_DSP_KC_DIRECT_AUTH
 
 ENV VITE_TILE_SERVER_URL=$VITE_TILE_SERVER_URL
+#ENV VITE_GRPC_SERVER_URL=https://local-dsp.virtru.com:5002
 ENV VITE_GRPC_SERVER_URL=$VITE_GRPC_SERVER_URL
 ENV VITE_DSP_BASE_URL=$VITE_DSP_BASE_URL
 ENV VITE_DSP_KAS_URL=$VITE_DSP_KAS_URL
@@ -30,7 +30,7 @@ RUN npm run build
 # Geos builder libgeos-dev
 FROM cgr.dev/chainguard/wolfi-base@sha256:c519d1c81a18a5c752f701bc59ceddfa4bf1a44e9bb605c73856cef216f69f7b AS geos-builder
 
-RUN apk add --no-cache geos=3.13.1-r3 geos-dev=3.13.1-r3
+RUN apk add --no-cache geos geos-dev
 
 # Go 1.24.2
 FROM cgr.dev/chainguard/go@sha256:dc53da3597aa89079c0bd3f402738bf910f2aa635f23d42f29b7e534a61e8149 AS go-setup
@@ -70,6 +70,8 @@ COPY --from=geos-builder /usr/include/geos/ /usr/include/geos/
 COPY --from=geos-builder /usr/include/geos_c.h /usr/include/
 COPY --from=geos-builder /usr/include/geos.h /usr/include/
 COPY --from=geos-builder /usr/lib/pkgconfig/geos.pc /usr/lib/pkgconfig/geos.pc
+
+COPY --from=builder /app /app
 
 COPY --from=builder /app/dsp-cop /usr/bin/
 

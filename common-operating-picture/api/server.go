@@ -21,6 +21,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/opentdf/platform/sdk"
 	"github.com/rs/cors"
+	"github.com/virtru-corp/dsp-cop/api/proto/tdf_note/v1/tdf_notev1connect"
 	"github.com/virtru-corp/dsp-cop/api/proto/tdf_object/v1/tdf_objectv1connect"
 	"github.com/virtru-corp/dsp-cop/db"
 	activeclients "github.com/virtru-corp/dsp-cop/pkg/activeClients"
@@ -208,7 +209,7 @@ func createStaticServer(c *config.Config, staticFs fs.FS) *http.Server {
 func createGrpcServer(server *TdfObjectServer) *http.Server {
 	mux := http.NewServeMux()
 
-	// Register reflection service on gRPC server.
+	// Register reflection service on gRPC server for TdfObjectService.
 	reflector := grpcreflect.NewStaticReflector(
 		"tdf_object.v1.TdfObjectService",
 	)
@@ -220,8 +221,6 @@ func createGrpcServer(server *TdfObjectServer) *http.Server {
 		server,
 		connect.WithInterceptors(getInterceptors()...),
 	)
-
-	// Create a new CORS middleware
 	mux.Handle(path, cors.New(cors.Options{
 		AllowedOrigins: []string{server.Config.Service.CORSOrigin},
 		AllowedMethods: connectcors.AllowedMethods(),
@@ -230,6 +229,21 @@ func createGrpcServer(server *TdfObjectServer) *http.Server {
 		MaxAge:         7200, // 2 hours in seconds
 	}).Handler(handler))
 
+	// Register TdfNoteService on gRPC server.
+	// Ensure you're using the correct handler generated for the TdfNoteService
+	pathNote, handlerNote := tdf_notev1connect.NewTdfNoteServiceHandler(
+		server, // your service implementation here
+		connect.WithInterceptors(getInterceptors()...), // apply any interceptors you need
+	)
+	mux.Handle(pathNote, cors.New(cors.Options{
+		AllowedOrigins: []string{server.Config.Service.CORSOrigin},
+		AllowedMethods: connectcors.AllowedMethods(),
+		AllowedHeaders: append(connectcors.AllowedHeaders(), "Authorization"),
+		ExposedHeaders: connectcors.ExposedHeaders(),
+		MaxAge:         7200, // 2 hours in seconds
+	}).Handler(handlerNote))
+
+	// Return the HTTP server with the mux
 	return &http.Server{
 		Addr:         ":" + server.Config.Service.GrpcPort,
 		Handler:      h2c.NewHandler(mux, &http2.Server{}),

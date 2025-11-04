@@ -1,7 +1,5 @@
-import { BannerContext, extractValues } from '@/contexts/BannerContext';
 import { Autocomplete, Chip, TextField } from '@mui/material';
 import type { WidgetProps } from '@rjsf/utils';
-import { useContext } from 'react';
 
 export function AttributeAutocompleteWidget({
   value,
@@ -9,7 +7,6 @@ export function AttributeAutocompleteWidget({
   options,
   label,
 }: WidgetProps) {
-  const { setClassification, setNeedToKnow, setRelTo } = useContext(BannerContext);
   return (
     <Autocomplete
       multiple={!!options?.multiple}
@@ -21,30 +18,14 @@ export function AttributeAutocompleteWidget({
       }
       options={options?.enumOptions || []}
       onChange={(_, values) => {
-        let fx;
-        const extracted = extractValues(values ?? []);
-        switch (label.toUpperCase()) {
-          case 'CLASSIFICATION':
-            fx = setClassification;
-            break;
-          case 'NEED TO KNOW':
-            fx = setNeedToKnow;
-            break;
-          case 'REL TO':
-            fx = setRelTo;
-            break;
-          default:
-            fx = () => {};
-        }
-        fx(extracted);
         return onChange(
-          (Array.isArray(values)
+          Array.isArray(values)
             ? values.map((v) => v.value)
-            // undefined must be returned here instead of null to avoid RJSF validation errors for string types
-            : values?.value) || undefined,
+            // Return undefined for empty values to keep RJSF validation happy
+            : values?.value || undefined
         );
       }}
-      renderTags={(tagValue, getTagProps) => 
+      renderTags={(tagValue, getTagProps) =>
         tagValue.map((option, index) => (
           <Chip label={option.label}
             {...getTagProps({ index })}

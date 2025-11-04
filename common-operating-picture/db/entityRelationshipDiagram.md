@@ -8,6 +8,7 @@ erDiagram
         TEXT src_type "source type of the data, loosely coupled to src_types.id"
         GEOMETRY geo "geospatial data"
         JSONB search "plaintext json search index"
+        JSONB metadata "plaintext json metadata index"
         BYTEA tdf_blob "tdf data blob"
         TEXT tdf_uri "tdf data uri"
         TIMESTAMP _created_at "timestamp of creation"
