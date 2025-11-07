@@ -123,8 +123,8 @@ message GetTdfObjectResponse {
 }
 
 message QueryTdfObjectsRequest {
-  TimestampSelector ts_range = 1 //  [(buf.validate.field).required = true];
-  string src_type = 2 // [(buf.validate.field).required = true];
+  TimestampSelector ts_range = 1 [(buf.validate.field).required = true];
+  string src_type = 2 [(buf.validate.field).required = true];
   string geo_location = 3;
   string search = 4;
 }
