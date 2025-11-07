@@ -79,7 +79,7 @@ func NewCopServer(c *config.Config, staticFs fs.FS) *CopServer {
 	// Create database connection
 	dbPool, err := db.NewPool(dbCtx, c)
 	if err != nil {
-		slog.ErrorContext(dbCtx, "Error connecting to database", err)
+		slog.ErrorContext(dbCtx, "Error connecting to database", "error", err)
 		panic(err)
 	}
 

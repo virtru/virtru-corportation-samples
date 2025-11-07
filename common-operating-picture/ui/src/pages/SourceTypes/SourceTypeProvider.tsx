@@ -82,35 +82,37 @@ export function SourceTypeProvider({ children, srcType }: Props) {
       throw new Error('SourceType does not have a form schema');
     }
 
-    // ✅ Clone schema to safely mutate
+    // Clone schema to safely mutate
     let createFormSchema: RJSFSchema = JSON.parse(JSON.stringify(formSchema.toJson()));
 
-    // ✅ Log original schema for debugging
+    // Log original schema for debugging
     console.log('CreateFormSchema:', JSON.stringify(createFormSchema, null, 2));
     console.log('Definitions:', JSON.stringify(createFormSchema.definitions, null, 2));
-    
+
     //const createFormSchema: RJSFSchema = formSchema.toJson();
-    // 🚨 Strip fields from BOTH schemas
+    // Strip fields from schemas
     const problematicFields = [ 'temp'
       //'attrRelTo' //'attrNeedToKnow',
       //'count' //'description', 'documentId', 'sourceId',// 'stage', 'siteId'
     ];
 
-    console.log('🟠 Original CreateFormSchema:', Object.keys(createFormSchema.properties || {}));
+    //console.log('Original CreateFormSchema:', Object.keys(createFormSchema.properties || {}));
 
-    // 🧹 Remove allOf
+    // Remove allOf
     //if (createFormSchema.allOf) {
-    //  console.warn('⚠️ Removing allOf from createFormSchema for testing');
+    //  console.warn('Removing allOf from createFormSchema for testing');
     //  delete createFormSchema.allOf;
     //}
 
-    // 🧹 Strip readOnly and remove problematic fields from createFormSchema
+    //Strip readOnly and remove problematic fields from createFormSchema
+    // TO REMOVE
     Object.entries(createFormSchema.properties || {}).forEach(([key, prop]: [string, any]) => {
       if (prop?.readOnly) {
         console.warn(`⚠️ readOnly from "${key}"`);
         //delete prop.readOnly;
       }
 
+      // TO REMOVE
       if (problematicFields.includes(key)) {
         console.warn(`🚫 Removing problematic field from createFormSchema: "${key}"`);
         delete createFormSchema.properties?.[key];
@@ -159,7 +161,7 @@ export function SourceTypeProvider({ children, srcType }: Props) {
           return schema;
         }, {}),
       },
-    }; 
+    };
 
     const createUiSchema = buildUiSchema(uiSchema);
 
@@ -190,7 +192,7 @@ export function SourceTypeProvider({ children, srcType }: Props) {
       form: searchFormSchema,
       ui: searchUiSchema,
     });
-    
+
   }, [srcType]);
 
   if (!srcType) {

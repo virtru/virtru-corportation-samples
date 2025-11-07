@@ -148,7 +148,7 @@ func (s *TdfObjectServer) GetEntitlements(
 	}
 
 	// Log for getting entitlements
-	slog.Debug("Authentication of GetEntitlements in tdfServer.go", slog.Any("Token", token))
+	//slog.Debug("Authentication of GetEntitlements in tdfServer.go", slog.Any("Token", token))
 
 	entitlements, err := s.getEntitlements(token)
 	if err != nil {
@@ -162,7 +162,7 @@ func (s *TdfObjectServer) GetEntitlements(
 	res.Header().Set("TdfObject-Version", "v1")
 
 	//Log of found entitlements
-	slog.Debug("Entitlements in tdfServer.go", slog.Any("Entitlements", entitlements))
+	//slog.Debug("Entitlements in tdfServer.go", slog.Any("Entitlements", entitlements))
 
 	return res, nil
 }
@@ -191,17 +191,15 @@ func (s *TdfObjectServer) QueryTdfObjects(
 	ctx context.Context,
 	req *connect.Request[tdf_objectv1.QueryTdfObjectsRequest],
 ) (*connect.Response[tdf_objectv1.QueryTdfObjectsResponse], error) {
-	//Log of command runnning
-	slog.Debug("The QueryTdfObjects function in tdf server.go")
 
 	token := req.Header().Get("Authorization")
 	entitlements, err := s.getEntitlements(token)
 
 	//Log of token
-	slog.Debug("Token for query tdf objects", slog.Any("Token", token))
+	//slog.Debug("Token for query tdf objects", slog.Any("Token", token))
 
 	//Log of found entitlements
-	slog.Debug("Entitlements in tdfServer.go", slog.Any("Entitlements", entitlements))
+	//slog.Debug("Entitlements in tdfServer.go", slog.Any("Entitlements", entitlements))
 
 	if err != nil {
 		slog.Error("Error fetching entitlements", slog.String("token", token), slog.String("error", err.Error()))
@@ -214,7 +212,7 @@ func (s *TdfObjectServer) QueryTdfObjects(
 	}
 
 	//Log of Pre filtered tdfobjects
-	slog.Debug("Pre filter objects", slog.Any("Tdfobjects", tdfObjects))
+	//slog.Debug("Pre filter objects", slog.Any("Tdfobjects", tdfObjects))
 
 	// TODO: additional work is needed here to get the attributes for the TDFs
 	// filter out TDFs that the user does not have access to
@@ -242,7 +240,7 @@ func (s *TdfObjectServer) QueryTdfObjects(
 		filteredTdfObjects = append(filteredTdfObjects, t)
 
 		//Log of filteredtdfobjects
-		slog.Debug("Filtered objects", slog.Any("Filtered", filteredTdfObjects))
+		//slog.Debug("Filtered objects", slog.Any("Filtered", filteredTdfObjects))
 
 	}
 
@@ -252,7 +250,7 @@ func (s *TdfObjectServer) QueryTdfObjects(
 	res.Header().Set("TdfObject-Version", "v1")
 
 	//Log of Response
-	slog.Debug("Response for tdf objects query", slog.Any("Response", res))
+	//slog.Debug("Response for tdf objects query", slog.Any("Response", res))
 
 	return res, nil
 }
@@ -309,8 +307,6 @@ func (s *TdfObjectServer) GetSrcType(
 	req *connect.Request[tdf_objectv1.GetSrcTypeRequest],
 ) (*connect.Response[tdf_objectv1.GetSrcTypeResponse], error) {
 
-	slog.Info("This is in tdfobjectserver.go and the GetSrcTypes function.")
-
 	srcType, err := dbQuerySrcType(ctx, s.DBQueries, req.Msg.SrcType)
 	if err != nil {
 		return nil, err
@@ -328,8 +324,6 @@ func (s *TdfObjectServer) ListSrcTypes(
 	ctx context.Context,
 	req *connect.Request[tdf_objectv1.ListSrcTypesRequest],
 ) (*connect.Response[tdf_objectv1.ListSrcTypesResponse], error) {
-
-	slog.Info("This is in tdfobjectserver.go and the ListSrcTypes function.")
 
 	srcTypes, err := s.DBQueries.ListSrcTypes(ctx)
 	if err != nil {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -37,13 +36,13 @@ func queryTdfObjectSwitch(ctx context.Context, q *db.Queries, p *tdf_objectv1.Qu
 	srcType := p.GetSrcType()
 
 	//Log of SrcType
-	slog.Debug("SrcType for the queryTdfObjectsSwitch in utils.go", slog.Any("SrcType", srcType))
+	//slog.Debug("SrcType for the queryTdfObjectsSwitch in utils.go", slog.Any("SrcType", srcType))
 
 	startTime := pgtype.Timestamp{Time: p.GetTsRange().GreaterOrEqualTo.AsTime(), Valid: true}
 	endTime := pgtype.Timestamp{Time: time.Now().UTC(), Valid: true}
 
 	//Log of Time in query
-	slog.Debug("Time range for the queryTdfObjectsSwitch in utils.go", slog.Any("Start", startTime), slog.Any("End", endTime))
+	//slog.Debug("Time range for the queryTdfObjectsSwitch in utils.go", slog.Any("Start", startTime), slog.Any("End", endTime))
 
 	if p.GetTsRange().LesserOrEqualTo != nil {
 		endTime = pgtype.Timestamp{Time: p.GetTsRange().LesserOrEqualTo.AsTime(), Valid: true}
@@ -61,7 +60,7 @@ func queryTdfObjectSwitch(ctx context.Context, q *db.Queries, p *tdf_objectv1.Qu
 	search := []byte(p.Search)
 
 	//Log of Search
-	slog.Debug("Search for the queryTdfObjectsSwitch in utils.go", slog.Any("Search", search))
+	//slog.Debug("Search for the queryTdfObjectsSwitch in utils.go", slog.Any("Search", search))
 
 	if geometry != "" && len(search) > 0 {
 		return dbQuerySearchAndGeo(ctx, q, db.ListTdfObjectsWithSearchAndGeoParams{
@@ -205,7 +204,6 @@ type dbSrcTypeUiSchemaFieldConfig struct {
 
 func dbQuerySrcType(ctx context.Context, query *db.Queries, srcTypeId string) (*tdf_objectv1.SrcType, error) {
 
-	slog.Info("This is in utils.go and is a dbQuery for SrcTypes", slog.Any("Id", srcTypeId))
 	srcType, err := query.GetSrcType(ctx, srcTypeId)
 	if err != nil {
 		return nil, err
@@ -240,7 +238,7 @@ func dbQuerySrcType(ctx context.Context, query *db.Queries, srcTypeId string) (*
 		Order:       dbUiSchema.Order,
 		FieldConfig: make(map[string]*tdf_objectv1.SrcTypeUiSchemaFieldConfig),
 	}
-	slog.Info("This query in utils.go is for:", slog.Any("Ui Schema:", uiSchema))
+	//slog.Info("This query in utils.go is for:", slog.Any("Ui Schema:", uiSchema))
 	// convert the dynamic field configs to their proto struct equivalent
 	for k, v := range dbUiSchema.FieldConfig {
 		fieldConfig := &dbSrcTypeUiSchemaFieldConfig{}
