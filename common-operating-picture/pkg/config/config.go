@@ -55,7 +55,7 @@ type Config struct {
 	////////////////////////
 	//// Optional
 	////////////////////////
-	LogLevel string `mapstructure:"log_level" default:"INFO"`
+	LogLevel string `mapstructure:"log_level" default:"DEBUG"`
 
 	Service struct {
 		// The public host and port is used by the web interface to connect to the server. In many

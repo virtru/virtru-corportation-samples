@@ -12,6 +12,10 @@ type Props = {
 };
 
 export function SearchResults({ tdfObjects, onFlyToClick }: Props) {
+
+  // Log for number of results
+  //console.log('SearchResults received objects:', tdfObjects.length);
+  
   const { displayFields, getFieldTitle } = useSourceType();
 
   const handleFlyToClick = (o: TdfObjectResponse) => {
@@ -23,7 +27,7 @@ export function SearchResults({ tdfObjects, onFlyToClick }: Props) {
 
   const renderHeader = (o: TdfObjectResponse) => {
     let formattedDateTime = 'Time Not Recorded';
-    
+
     if (o.tdfObject.ts) {
       formattedDateTime = formatDateTime(o.tdfObject.ts.toDate().toISOString());
     }
@@ -46,7 +50,17 @@ export function SearchResults({ tdfObjects, onFlyToClick }: Props) {
     const oa = propertyOf(o.decryptedData);
 
     const details = (displayFields?.details || []).map(field => {
-      const value = oa(field);
+      let value = oa(field);
+
+    //Handle the tdfobject data
+    if (typeof value === 'object' && value !== null) {
+      //Filter country data down to name, for all data can stringify and rework all fields
+      if ('country' in value) {
+        value = value.country;
+      } else {
+        value = JSON.stringify(value);
+      }
+    }
 
       return (
         <Box key={`${o.tdfObject.id}-${field}-details`} sx={{ wordBreak: 'break-all' }}>
@@ -54,7 +68,7 @@ export function SearchResults({ tdfObjects, onFlyToClick }: Props) {
         </Box>
       );
     });
-    
+
     return details;
   };
 

@@ -40,11 +40,8 @@ log_level: INFO
 # Service configuration
 service:
   # The public hosts for use in the web UI when the server is behind a reverse proxy
-  public_server_host: https://local-dsp.virtru.com:5002
-  public_static_host: https://local-dsp.virtru.com:5001
-  #public_server_host: local-dsp.virtru.com:5002 
-  #public_static_host: local-dsp.virtru.com:5001
-
+  public_server_host: local-dsp.virtru.com:5002
+  public_static_host: local-dsp.virtru.com:5001
 
   # gRPC config
   grpc_port: 5002
