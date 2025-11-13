@@ -25,10 +25,10 @@ func staticFilesHandler(_ *config.Config, staticFs fs.FS) http.Handler {
 		// clean path for security & strip leading slash to avoid FS.Open errors
 		cleanedPath := strings.TrimPrefix(path.Clean(r.URL.Path), "/")
 		//Added to logs
-		slog.Debug("Trimmed path", slog.Any("path", cleanedPath))
+		//slog.Debug("Trimmed path", slog.Any("path", cleanedPath))
 		// check if file exists or serve index.html unless it's a static file request
 		if file, err := staticFs.Open(cleanedPath); err != nil {
-			slog.Debug("File and path requested from staticfileserver:", slog.Any("File", file), slog.Any("Serving from path:", cleanedPath))
+			//slog.Debug("File and path requested from staticfileserver:", slog.Any("File", file), slog.Any("Serving from path:", cleanedPath))
 			if errors.Is(err, os.ErrNotExist) && path.Ext(cleanedPath) != "" { // 404 for static files
 				http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 				return

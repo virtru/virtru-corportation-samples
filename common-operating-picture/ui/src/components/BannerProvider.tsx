@@ -10,22 +10,48 @@ export const BannerProvider = ({ children }: { children: ReactNode }) => {
     const [searchIsActive, setSearchIsActive] = useState(false);
     const [hasResults, setHasResults] = useState(false);
 
-    // Separate Active Entitlements for limiting search
-    const [activeEntitlements, setActiveEntitlements] = useState(new Set<string>());
-
-    // Moved method for managing the tdfobjects. Enabled clearing from changing classification
+    // Moved method for managing the tdfobjects
     const [tdfObjects, setTdfObjects] = useState<TdfObjectResponse[]>([]);
+
+    // Initialize with an empty Set or the default practice set if needed for initial rendering
+    const [activeEntitlements, setActiveEntitlements] = useState(new Set<string>(["NoAccess"]));
+
+    // Tracks if entitlements have been initialized from the user object
+    const [isEntitlementsInitialized, setIsEntitlementsInitialized] = useState(false);
 
     // Added auth to instantiate the active entitlements
     const { user } = useAuth();
 
-
     useEffect(() => {
-        if (user && user.entitlements && activeEntitlements.size === 0) {
-            // Initialize activeEntitlements to the user's full entitlements on load
-            setActiveEntitlements(new Set(user.entitlements));
+        // Condition Check:
+        // 1. Check if the user object (and entitlements) is loaded (i.e., not the initial 'loading' array).
+        // 2. Check if the entitlements **haven't** been initialized yet.
+
+        // Assuming user?.entitlements will eventually be an array of actual entitlements
+        // or an empty array, and not the literal string array ["loading"].
+        // We check for the presence of user.entitlements AND that the length > 0 OR user is fully loaded.
+
+        // **Updated Logic for Initialization**
+        const userEntitlements = user?.entitlements;
+        const isUserLoaded = user && userEntitlements && userEntitlements[0] !== "loading";
+
+        //console.log("User Entitlements", userEntitlements);
+
+        if (isUserLoaded && !isEntitlementsInitialized) {
+
+            const initialEntitlements = userEntitlements.length > 0
+                ? new Set(userEntitlements)
+                : new Set<string>(); // Use an empty set if the list is empty
+
+            // Set the active entitlements to all user entitlments
+            setActiveEntitlements(initialEntitlements);
+
+            // Mark that entitlements have been initilized
+            setIsEntitlementsInitialized(true);
+
+            //console.log("Entitlements Initialized:", initialEntitlements);
         }
-    }, [user, activeEntitlements.size]);
+    }, [user, isEntitlementsInitialized]); // Dependencies include 'user' and new flag
 
     return (
       <BannerContext.Provider value={{

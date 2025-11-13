@@ -109,7 +109,7 @@ func (s *TdfObjectServer) GetTdfObject(
 ) (*connect.Response[tdf_objectv1.GetTdfObjectResponse], error) {
 
 	// Log for getting entitlements
-	slog.Debug("Get Tdf Object Function in tdf server")
+	//slog.Debug("Get Tdf Object Function in tdf server")
 
 	uuid, err := uuid.Parse(req.Msg.Id)
 	if err != nil {

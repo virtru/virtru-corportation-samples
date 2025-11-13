@@ -86,8 +86,8 @@ export function SourceTypeProvider({ children, srcType }: Props) {
     let createFormSchema: RJSFSchema = JSON.parse(JSON.stringify(formSchema.toJson()));
 
     // Log original schema for debugging
-    console.log('CreateFormSchema:', JSON.stringify(createFormSchema, null, 2));
-    console.log('Definitions:', JSON.stringify(createFormSchema.definitions, null, 2));
+    //console.log('CreateFormSchema:', JSON.stringify(createFormSchema, null, 2));
+    //console.log('Definitions:', JSON.stringify(createFormSchema.definitions, null, 2));
 
     //const createFormSchema: RJSFSchema = formSchema.toJson();
     // Strip fields from schemas
@@ -108,13 +108,13 @@ export function SourceTypeProvider({ children, srcType }: Props) {
     // TO REMOVE
     Object.entries(createFormSchema.properties || {}).forEach(([key, prop]: [string, any]) => {
       if (prop?.readOnly) {
-        console.warn(`⚠️ readOnly from "${key}"`);
+        console.warn(`readOnly from "${key}"`);
         //delete prop.readOnly;
       }
 
       // TO REMOVE
       if (problematicFields.includes(key)) {
-        console.warn(`🚫 Removing problematic field from createFormSchema: "${key}"`);
+        console.warn(`Removing problematic field from createFormSchema: "${key}"`);
         delete createFormSchema.properties?.[key];
       }
     });
@@ -145,13 +145,13 @@ export function SourceTypeProvider({ children, srcType }: Props) {
           const prop = createFormSchema.properties?.[field];
 
           if (!prop) {
-          console.warn(`⚠️ Field "${field}" is not defined in createFormSchema.properties`);
+          console.warn(`Field "${field}" is not defined in createFormSchema.properties`);
           return schema;
           }
 
 
           try {
-            console.log(`Field: ${field}`, JSON.stringify(prop, null, 2));
+            //console.log(`Field: ${field}`, JSON.stringify(prop, null, 2));
           } catch (err) {
             console.error(`Could not stringify field "${field}" — possible circular reference`, field);
           }
@@ -180,8 +180,7 @@ export function SourceTypeProvider({ children, srcType }: Props) {
     };
 
     //Logs
-    console.log('✅ Final createFormSchema:', Object.keys(createFormSchema.properties || {}));
-    console.log('✅ Final searchFormSchema:', Object.keys(searchFormSchema.properties || {}));
+    //console.log('Final searchFormSchema:', Object.keys(searchFormSchema.properties || {}));
 
     setCreateFormSchema({
       form: createFormSchema,

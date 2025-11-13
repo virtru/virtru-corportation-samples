@@ -27,7 +27,7 @@ export function SourceTypeSelector({ value, onChange }: Props) {
       try {
         const { srcTypes } = await listSrcTypes({});
         setTypeList(srcTypes);
-	      console.log("Fetched source types:", srcTypes);
+	      //console.log("Fetched source types:", srcTypes);
       } catch (err) {
         console.error(err);
       }
@@ -38,7 +38,7 @@ export function SourceTypeSelector({ value, onChange }: Props) {
 
   return (
     <>
-      <Button 
+      <Button
         variant="contained"
         size="small"
         onClick={openMenu}

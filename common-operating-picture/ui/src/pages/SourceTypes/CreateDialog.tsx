@@ -52,6 +52,7 @@ export function CreateDialog({ open, onClose }: Props) {
   //console.log('Current Active Classification:', activeClassification);
   //console.log('Current Active Need to Know:', activeNeedToKnow);
   //console.log('Current Active Rel To:', activeRelTo);
+  //console.log('Current Active Entitlements (CD):', activeEntitlements);
 
   const formRef = useRef<Form<any, RJSFSchema> | null>(null);
 

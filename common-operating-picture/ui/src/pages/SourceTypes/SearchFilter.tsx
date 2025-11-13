@@ -65,6 +65,9 @@ export function SearchFilter({ map }: Props) { //onSearch removed
     setTdfObjects,
   } = useContext(BannerContext);
 
+  //console.log('Current Active Entitlements (SF):', activeEntitlements);
+
+
   const { queryTdfObjects } = useRpcClient();
 
   const formRef = useRef<Form<any, RJSFSchema> | null>(null);
