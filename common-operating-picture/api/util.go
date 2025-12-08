@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/mitchellh/mapstructure"
 	geos "github.com/twpayne/go-geos"
-	tdf_notev1 "github.com/virtru-corp/dsp-cop/api/proto/github.com/virtru-corp/dsp-cop/api/proto/tdf_note/v1"
+	tdf_notev1 "github.com/virtru-corp/dsp-cop/api/proto/tdf_note/v1"
 	tdf_objectv1 "github.com/virtru-corp/dsp-cop/api/proto/tdf_object/v1"
 	"github.com/virtru-corp/dsp-cop/db"
 	"google.golang.org/protobuf/types/known/structpb"

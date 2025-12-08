@@ -23,3 +23,6 @@ virtru-dsp-bundle/
 
 # Node 
 node_modules/
+
+#python vevn
+COP_venv/

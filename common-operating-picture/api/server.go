@@ -21,7 +21,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/opentdf/platform/sdk"
 	"github.com/rs/cors"
-	"github.com/virtru-corp/dsp-cop/api/proto/github.com/virtru-corp/dsp-cop/api/proto/tdf_note/v1/tdf_notev1connect"
+	"github.com/virtru-corp/dsp-cop/api/proto/tdf_note/v1/tdf_notev1connect"
 	"github.com/virtru-corp/dsp-cop/api/proto/tdf_object/v1/tdf_objectv1connect"
 	"github.com/virtru-corp/dsp-cop/db"
 	activeclients "github.com/virtru-corp/dsp-cop/pkg/activeClients"
