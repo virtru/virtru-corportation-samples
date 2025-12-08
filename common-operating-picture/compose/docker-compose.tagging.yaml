@@ -8,11 +8,6 @@ services:
   tagging:
     image: ${TAGGING_IMAGE}
     restart: on-failure
-# Not sure why the below works sometimes and not others...esp with a secondary docker compose up after initial start
-#    depends_on:
-#      dsp:
-#        condition: service_healthy
-#        restart: true
 
     ports:
       - "9001:8080"
@@ -28,7 +23,7 @@ services:
       - TAGGINGPDP_ADDITIONAL_TRUSTED_CERT_DIR=/tagging-pdp/truststore
       - TAGGINGPDP_AUTH_ENABLED=false
     volumes:
-      - ../sample.tagging.yaml/:/tagging-pdp/config/tagging_config.yaml
+      - ../fed-config.go.yaml/:/tagging-pdp/config/tagging_config.yaml
       - ../truststore:/tagging-pdp/truststore # mounts truststore
     extra_hosts:
       - "local-dsp.virtru.com:172.17.0.1" #host and ip

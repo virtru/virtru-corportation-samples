@@ -2,8 +2,72 @@
 // same YAML provisioned into the DSP policy database.
 // @ts-expect-error TS2307 - policy yaml schema is enforced by DSP and should not be defined in frontend
 import { attributes as policy } from '@root/sample.federal_policy.yaml';
+import { IChangeEvent } from '@rjsf/core';
+import { RJSFSchema } from '@rjsf/utils';
+import { ClassificationPriority } from '@/contexts/BannerContext'; // Ensure this path is correct
 
 const namespace = policy[0].namespace;
+
+/**
+ * Utility to calculate all subordinate classifications for a selected classification.
+ */
+export const getSubordinateClassifications = (selectedClass: string): string[] => {
+    // Look up the priority of the selected class
+    const selectedPriority = ClassificationPriority[selectedClass as keyof typeof ClassificationPriority];
+    if (selectedPriority === undefined) return [];
+
+    // Filter all classifications whose priority is less than or equal to the selected one.
+    return Object.keys(ClassificationPriority).filter(
+        (key) => ClassificationPriority[key as keyof typeof ClassificationPriority] <= selectedPriority
+    );
+};
+
+/**
+ * Checks form data against user entitlements to find unavailable attributes.
+ */
+export const checkAndSetUnavailableAttributes = (
+    data: IChangeEvent<any, RJSFSchema>,
+    attrFields: string[] | undefined,
+    entitlements: Set<string>,
+    setUnavailAttrs: React.Dispatch<React.SetStateAction<string[]>>
+) => {
+    const { formData } = data;
+
+    if (!formData || !attrFields) {
+        setUnavailAttrs([]);
+        return;
+    }
+
+    const pendingUnavailAttrs = Object.entries(formData).reduce((acc: string[], [key, value]) => {
+        if (attrFields.includes(key)) {
+            // Normalize value to an array if it's a single select/string
+            let values = Array.isArray(value) ? value : [value as string];
+
+            values.forEach((v: string) => {
+                // If value exists and is NOT in the user's entitlements set, add it to the unavailable list
+                if (v && !entitlements.has(v)) {
+                    acc.push(v);
+                }
+            });
+        }
+        return acc;
+    }, []);
+
+    setUnavailAttrs(pendingUnavailAttrs);
+};
+
+/**
+ * Sets the entitlements state based on the user object from useAuth.
+ */
+export const updateEntitlementsFromUser = (
+    user: { entitlements: string[] } | null | undefined,
+    setEntitlements: React.Dispatch<React.SetStateAction<Set<string>>>
+) => {
+    if (user && user.entitlements) {
+        setEntitlements(new Set(user.entitlements));
+    }
+};
+
 
 export function attrFqn(attr: string, value: string) {
   return `https://${namespace}/attr/${attr}/value/${value}`.toLowerCase();

@@ -5,12 +5,12 @@ RETURNING id;
 
 -- name: UpdateTdfObject :one
 UPDATE tdf_objects
-SET ts = $2,
-    src_type = $3,
-    geo = $4,
-    search = $5,
-    tdf_blob = $6,
-    tdf_uri = $7
+SET ts = COALESCE(sqlc.narg('ts'), ts),
+    src_type = COALESCE(sqlc.narg('src_type'), src_type),
+    geo = COALESCE(sqlc.narg('geo'), geo),
+    search = COALESCE(sqlc.narg('search'), search),
+    tdf_blob = COALESCE(sqlc.narg('tdf_blob'), tdf_blob),
+    tdf_uri = COALESCE(sqlc.narg('tdf_uri'), tdf_uri)
 WHERE id = $1
 RETURNING id, src_type, ts;
 
@@ -21,7 +21,7 @@ RETURNING *;
 
 -- name: GetTdfObject :one
 SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, tdf_blob, tdf_uri
-FROM tdf_objects 
+FROM tdf_objects
 WHERE
   id = $1
 LIMIT 1;
@@ -59,6 +59,27 @@ SELECT id, form_schema, ui_schema, metadata
 FROM src_types
 WHERE id = $1;
 
+-- name: GetNotesFromPar :many
+SELECT id, ts, parent_id, search, tdf_blob, tdf_uri
+FROM tdf_notes
+WHERE parent_id = $1;
+
 -- name: ListSrcTypes :many
 SELECT id
 FROM src_types;
+
+-- name: getNotesByParent :many
+SELECT id, ts, parent_id, tdf_blob, search, tdf_uri
+FROM tdf_notes
+WHERE parent_id = $1
+ORDER BY ts DESC;
+
+-- name: GetNoteByID :one
+SELECT id, ts, parent_id, tdf_blob, search, tdf_uri
+FROM tdf_notes
+where id = $1;
+
+-- name: CreateNoteObject :batchone
+INSERT INTO tdf_notes (ts, parent_id, search, tdf_blob, tdf_uri)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id;

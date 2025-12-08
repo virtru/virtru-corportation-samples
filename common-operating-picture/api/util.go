@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/mitchellh/mapstructure"
 	geos "github.com/twpayne/go-geos"
+	tdf_notev1 "github.com/virtru-corp/dsp-cop/api/proto/tdf_note/v1"
 	tdf_objectv1 "github.com/virtru-corp/dsp-cop/api/proto/tdf_object/v1"
 	"github.com/virtru-corp/dsp-cop/db"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -28,6 +29,17 @@ func prepObjForResponse(in db.TdfObject) *tdf_objectv1.TdfObject {
 		Geo:     geo,
 		TdfBlob: in.TdfBlob,
 		TdfUri:  in.TdfUri.String,
+	}
+}
+
+func prepNoteForResponse(in db.TdfNote) *tdf_notev1.TdfNote {
+
+	return &tdf_notev1.TdfNote{
+		Id:       in.ID.String(),
+		Ts:       timestamppb.New(in.Ts.Time),
+		ParentId: in.ParentID.String(),
+		TdfBlob:  in.TdfBlob,
+		TdfUri:   in.TdfUri.String,
 	}
 }
 
@@ -167,10 +179,10 @@ type dbSrcTypeMetadata struct {
 		Details []string `json:"details,omitempty"`
 	} `json:"displayFields,omitempty"`
 	MapFields struct {
-		IconDefault string `json:"iconDefault"`
-		IconConfig []dbSrcTypeMapFieldConfig `json:"iconConfig,omitempty"`
-		ColorDefault string `json:"colorDefault"`
-		ColorConfig []dbSrcTypeMapFieldConfig `json:"colorConfig,omitempty"`
+		IconDefault  string                    `json:"iconDefault"`
+		IconConfig   []dbSrcTypeMapFieldConfig `json:"iconConfig,omitempty"`
+		ColorDefault string                    `json:"colorDefault"`
+		ColorConfig  []dbSrcTypeMapFieldConfig `json:"colorConfig,omitempty"`
 	} `json:"mapFields,omitempty"`
 }
 
@@ -251,7 +263,7 @@ func dbQuerySrcType(ctx context.Context, query *db.Queries, srcTypeId string) (*
 	var colorConfigs []*tdf_objectv1.SrcTypeMetadataMapFieldConfig
 	for _, v := range metadata.MapFields.ColorConfig {
 		colorConfigs = append(colorConfigs, &tdf_objectv1.SrcTypeMetadataMapFieldConfig{
-			Field: v.Field,
+			Field:    v.Field,
 			ValueMap: v.ValueMap,
 		})
 	}
@@ -259,11 +271,10 @@ func dbQuerySrcType(ctx context.Context, query *db.Queries, srcTypeId string) (*
 	var iconConfigs []*tdf_objectv1.SrcTypeMetadataMapFieldConfig
 	for _, v := range metadata.MapFields.IconConfig {
 		iconConfigs = append(iconConfigs, &tdf_objectv1.SrcTypeMetadataMapFieldConfig{
-			Field: v.Field,
+			Field:    v.Field,
 			ValueMap: v.ValueMap,
 		})
 	}
-
 
 	protoSrcType := &tdf_objectv1.SrcType{
 		Id:         srcType.ID,
@@ -279,10 +290,10 @@ func dbQuerySrcType(ctx context.Context, query *db.Queries, srcTypeId string) (*
 				Details: metadata.DisplayFields.Details,
 			},
 			MapFields: &tdf_objectv1.SrcTypeMetadataMapFields{
-				IconDefault: metadata.MapFields.IconDefault,
-				IconConfig: iconConfigs,
+				IconDefault:  metadata.MapFields.IconDefault,
+				IconConfig:   iconConfigs,
 				ColorDefault: metadata.MapFields.ColorDefault,
-				ColorConfig: colorConfigs,
+				ColorConfig:  colorConfigs,
 			},
 		},
 	}
