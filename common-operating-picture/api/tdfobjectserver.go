@@ -16,7 +16,7 @@ import (
 	"github.com/opentdf/platform/sdk"
 
 	geos "github.com/twpayne/go-geos"
-	tdf_notev1 "github.com/virtru-corp/dsp-cop/api/proto/github.com/virtru-corp/dsp-cop/api/proto/tdf_note/v1"
+	tdf_notev1 "github.com/virtru-corp/dsp-cop/api/proto/tdf_note/v1"
 	tdf_objectv1 "github.com/virtru-corp/dsp-cop/api/proto/tdf_object/v1"
 	"github.com/virtru-corp/dsp-cop/db"
 	activeclients "github.com/virtru-corp/dsp-cop/pkg/activeClients"
@@ -114,7 +114,9 @@ func (s *TdfObjectServer) UpdateTdfObject(
 	// Ts is optional but if not provided set it to current time
 	if req.Msg.Ts != nil {
 		params.Ts = pgtype.Timestamp{Time: req.Msg.GetTs().AsTime().UTC(), Valid: true}
-	} else { params.Ts = pgtype.Timestamp{Time: time.Now().UTC(), Valid: true} }
+	} else {
+		params.Ts = pgtype.Timestamp{Time: time.Now().UTC(), Valid: true}
+	}
 
 	// SrcTpe, Geo, Search, TdfBlob, TdfUri are all optional fields
 	if req.Msg.SrcType != nil {

@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"connectrpc.com/connect"
-	tdf_notev1 "github.com/virtru-corp/dsp-cop/api/proto/github.com/virtru-corp/dsp-cop/api/proto/tdf_note/v1"
+	tdf_notev1 "github.com/virtru-corp/dsp-cop/api/proto/tdf_note/v1"
 	tdf_objectv1 "github.com/virtru-corp/dsp-cop/api/proto/tdf_object/v1"
 )
 
