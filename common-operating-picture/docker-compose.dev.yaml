@@ -43,7 +43,7 @@ services:
     extends:
       file: ./compose/docker-compose.cop-web-server.yaml
       service: cop-web-server
-
+      
 #================================================================
 # Start Keycloak
 #----------------------------------------------------------------

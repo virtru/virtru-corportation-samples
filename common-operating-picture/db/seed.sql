@@ -141,7 +141,7 @@ VALUES (
         "default":"REGULAR/INCIDENT"
       },
       "entryDate": {
-        "title":"Entry Date", 
+        "title":"Entry Date",
         "type":"string",
         "format":"date"
       },
@@ -295,7 +295,7 @@ VALUES (
           "uniqueItems":true,
           "items":{"$ref":"#/definitions/attributeRelTo"}
         },
-        "symbolCode2525b": { 
+        "symbolCode2525b": {
           "title":"Symbol Code",
           "$ref":"#/definitions/milSymbols"
         },

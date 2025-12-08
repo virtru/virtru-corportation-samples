@@ -1,7 +1,8 @@
 import { AuthUser } from '@/contexts/AuthContext';
-import { AuthProviders, NanoTDFClient, TDF3Client, DecryptSource } from '@opentdf/client';
+import { NanoTDFClient, TDF3Client, DecryptSource } from '@opentdf/client';
 import { config } from '@/config';
 import { useAuth } from './useAuth';
+import { AuthProviders } from '@virtru/dsp-sdk';
 
 /** Creates a new instance of an OIDC Auth Provider consumed by the TDF Clients */
 async function createAuthProvider(user: AuthUser | null) {
@@ -72,7 +73,9 @@ export function useTDF() {
       source: stringToReadableStream(plaintext),
       offline: true,
     });
-    return readable.toBuffer();
+    const uint8Array = await readable.toBuffer();
+    // Use the .buffer property to get the underlying ArrayBuffer
+    return uint8Array.buffer as ArrayBuffer;
   };
 
   const encrypt = async (plaintext: string, attrs: string[]): Promise<ArrayBuffer> => {

@@ -13,7 +13,7 @@ import { customizeValidator } from '@rjsf/validator-ajv8';
 import { Theme as RJSFFormMuiTheme } from '@rjsf/mui';
 import { getAttributes } from '@/utils/attributes';
 import { Country, countryFromPoint } from '@/utils/countries';
-import { CreateTdfObjectRequest } from '@/proto/tdf_object/v1/tdf_object_pb';
+import { CreateTdfObjectRequest } from '@/proto/tdf_object/v1/tdf_object_pb.ts';
 import { PartialMessage, Timestamp } from '@bufbuild/protobuf';
 import dayjs from 'dayjs';
 import { Alert } from '@mui/material';
@@ -132,6 +132,7 @@ export function CreateDialog({ open, onClose }: Props) {
   };
 
   const handleSubmit = async (data: IChangeEvent<any, RJSFSchema>) => {
+    //console.log('Form submission initiated with data:', data);
     const { formData } = data;
     if (!formData) {
       return;
@@ -150,6 +151,10 @@ export function CreateDialog({ open, onClose }: Props) {
           attrs.push(...getAttributes(formData[field]));
         }
       }
+
+      //console.debug('Form Data to submit:', formData);
+      //console.debug('Attributes for encryption:', attrs);
+
       const tdfBlob = await encrypt(JSON.stringify(formData), attrs);
 
       const tdfObject: PartialMessage<CreateTdfObjectRequest> = {
@@ -174,6 +179,10 @@ export function CreateDialog({ open, onClose }: Props) {
         tdfObject.geo = JSON.stringify(geo);
       }
 
+      //console.debug('Geos:', tdfObject.geo);
+      //console.debug('Attrs:', attrs);
+
+
       const searchPlaintext: Record<string, any> = {};
       for (const field of searchFields || []) {
         if (formData[field]) {
@@ -188,11 +197,16 @@ export function CreateDialog({ open, onClose }: Props) {
         const utcDate = dayjs(formData[tsField]).utc().toDate();
         tdfObject.ts = Timestamp.fromDate(utcDate);
       }
-
-      const response = await createTdfObject(tdfObject);
-      console.debug('Form submission successful:', response);
+      //console.debug('Timestamp:', tdfObject);
+      //const response =
+      await createTdfObject(tdfObject);
+      //console.debug('Form submission successful:', response);
 
       // todo: do we need to pass the created object back to the parent?
+      // Restore the classification, needToKnow, and relTo from the stored originals
+      setClassification(originalClassification);
+      setNeedToKnow(originalNeedToKnow);
+      setRelTo(originalRelTo);
       onClose();
     } catch (err) {
       console.error('Form submission failed:', err);

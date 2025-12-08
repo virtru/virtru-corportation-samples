@@ -34,4 +34,4 @@ services:
         restart: true
     extra_hosts:
       - "local-dsp.virtru.com:172.17.0.1" #host and ip
-      - "host.docker.internal:host-gateway"
+      #- "host.docker.internal:host-gateway"

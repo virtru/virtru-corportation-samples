@@ -63,13 +63,11 @@ export function MarkerLayer({ tdfObjects = [], isCluster = false, layerName = 'u
         </Box>
       );
     });
-
     return details;
   };
 
   const tdfObjectToDynamicIcon = (tdfObject: TdfObjectResponse) => {
     const oa = propertyOf(tdfObject.decryptedData);
-
     let iconSvgPath = '';
     let iconColor = '';
 
@@ -93,7 +91,6 @@ export function MarkerLayer({ tdfObjects = [], isCluster = false, layerName = 'u
 
         // what is the value of that field from the data object?
         let objectConfigValueIcon = oa(iconConfigField);
-
         // Handle for type Array (ie: attrNeedToKnow, attrRelTo)
         if (Array.isArray(objectConfigValueIcon)) {
           // fixme: currently using the first index
@@ -189,7 +186,6 @@ export function MarkerLayer({ tdfObjects = [], isCluster = false, layerName = 'u
     else {
       console.error('Error creating icon');
     }
-
     return L.icon({
       iconUrl: canvas.toDataURL(),
       iconSize: [size, size],

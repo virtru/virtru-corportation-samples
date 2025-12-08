@@ -1,0 +1,314 @@
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { LatLng } from 'leaflet';
+import { Accordion, AccordionDetails, AccordionSummary, Box, Button,
+  IconButton, TextField, Stack, Typography, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { ExpandMore, GpsFixed } from '@mui/icons-material';
+import { TdfObjectResponse, TdfNotesResponse, useRpcClient } from '@/hooks/useRpcClient';
+import { useSourceType } from './SourceTypeContext';
+import { formatDateTime } from '@/utils/format';
+import { propertyOf } from 'lodash';
+import { CreateTdfNoteRequest } from '@/proto/tdf_object/v1/tdf_note_pb';
+import { PartialMessage } from '@bufbuild/protobuf';
+import { useTDF } from '@/hooks/useTdf';
+
+// Note data structure to pass note attributes back to parent
+interface NoteAttributeData {
+  noteId: string;
+  searchAttributes: string;
+}
+
+// TDF Object search attributes
+interface TDFObjectSearchAttributes {
+  attrClassification?: string[];
+  attrNeedtoknow?: string[];
+  attrRelto?: string[];
+}
+
+// New component props
+type Props = {
+  tdfObjectResponse: TdfObjectResponse;
+  categorizedData: Record<string, string[]>;
+  onFlyToClick: (location: LatLng) => void;
+  onNotesUpdated: (objectId: string, notes: NoteAttributeData[]) => void;
+};
+
+export function TdfObjectResult({ tdfObjectResponse: o, categorizedData, onFlyToClick, onNotesUpdated }: Props) {
+  const { displayFields, getFieldTitle } = useSourceType();
+  const { encrypt } = useTDF();
+  const { createNoteObject, queryNotes } = useRpcClient();
+
+  // Isolated note text box state
+  const [noteText, setNoteText] = useState('');
+  // Isolated state for managing dropdown selections
+  const [localSelectedValues, setLocalSelectedValues] = useState<{ [key: string]: string | string[] }>({});
+  // Isolated state for note results for this object
+  const [objectNotes, setObjectNotes] = useState<TdfNotesResponse[]>([]);
+
+  const prevObjectId = useRef<string | null>(null);
+
+  // fetchNotes given objectId
+  const fetchNotes = useCallback(async (objectId: string, isNoteSubmission = false) => {
+
+  // Skip refetch if same objectId and not a note submission to prevent unnecessary/looping calls
+  if (objectId === prevObjectId.current && !isNoteSubmission) return;
+
+  // Update previous objectId reference
+  if (!isNoteSubmission) {
+    prevObjectId.current = objectId;
+  }
+
+  try {
+    //console.log(`Fetching notes for object ID: ${objectId}`);
+    const notes = await queryNotes({ parentId: objectId });
+    setObjectNotes(notes);
+    //console.log("Fetched notes: ", notes);
+
+    // Map notes to the simpler structure for parent
+    const noteAttributes = notes.map(note => ({
+      noteId: note.tdfNote.id,
+      searchAttributes: note.tdfNote.search,
+    }));
+
+    // Pass notes back to parent
+    onNotesUpdated(objectId, noteAttributes);
+  } catch (error) {
+    console.error('Error fetching notes:', error);
+  }
+}, [queryNotes, onNotesUpdated]);
+
+  // Initial fetch on mount or if the tdfObject changes
+  useEffect(() => {
+    fetchNotes(o.tdfObject.id);
+  }, [o.tdfObject.id, fetchNotes]);
+
+  const handleFlyToClick = () => {
+    const coordinates = JSON.parse(o.tdfObject.geo).coordinates;
+    // NOTE: tdfObject provides coordinates as long/lat, but Leaflet expects coordinates as lat/long
+    onFlyToClick(new LatLng(coordinates[1], coordinates[0]));
+  };
+
+  // Only updates the local note text state
+  const handleNoteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNoteText(e.target.value);
+  };
+
+  // Handles dropdown changes for local state
+  const handleDropdownChange = (category: string, value: string | string[]) => {
+    setLocalSelectedValues((prevValues) => ({
+      ...prevValues,
+      [category]: value,
+    }));
+  };
+
+    // Submits the note along with selected attributes
+  const handleNoteSubmit = async () => {
+    // Validation Checks
+    // Ensure note text is not empty and classification is selected if required
+    const trimmedNoteText = noteText.trim();
+    const classificationSelected = localSelectedValues['classification'];
+
+    if (!trimmedNoteText) {
+      console.log("Note Submission Error: Note needs to have text, cannot be empty.");
+      return;
+    }
+
+    const hasClassificationEntitlements = Object.keys(categorizedData).includes('classification');
+    if (hasClassificationEntitlements && !classificationSelected) {
+      console.log("Note Submission Error: Must have a classification attribute selected.");
+      return;
+    }
+
+    // Prepare an object to store the attributes for encryption
+    const attrs: { [key: string]: string[] } = {
+      attrClassification: [],
+      attrNeedtoknow: [],
+      attrRelto: [],
+    };
+
+    // Loop through each category and populate attrs based on local selections
+    Object.keys(categorizedData).forEach((category) => {
+      const selectedValue = localSelectedValues[category];
+      if (selectedValue) {
+        // Get the selected value for the category from selectedValues
+        const categoryKey = `attr${category.charAt(0).toUpperCase() + category.slice(1)}`;
+
+        // Handle both single and multiple selections
+        const valuesToProcess = Array.isArray(selectedValue) ? selectedValue : [selectedValue];
+
+        if (attrs[categoryKey]) {
+          valuesToProcess.forEach(selectedValue => {
+            if (selectedValue) {
+              attrs[categoryKey].push(`https://demo.com/attr/${category}/value/${selectedValue}`);
+            }
+          });
+        }
+      }
+    });
+
+    // Encrypt and submit
+    const tdfBlob = await encrypt(JSON.stringify(trimmedNoteText), Object.values(attrs).flat());
+
+    // Ensure search is either a valid stringified object or null if empty
+    const search = Object.keys(attrs).some(key => attrs[key].length > 0) ? JSON.stringify(attrs) : "";
+
+    const tdfNote: PartialMessage<CreateTdfNoteRequest> = {
+      parentId: o.tdfObject.id,
+      search: search,
+      tdfBlob: new Uint8Array(tdfBlob),
+    };
+
+    // Create the note (submit)
+    await createNoteObject(tdfNote);
+    //console.log(`Submitted note for ${o.tdfObject.id}.`);
+
+    // Re-fetch notes and update parent
+    setNoteText(''); // Clear text box
+
+    // Must indicate that this fetch is due to a note submission
+    await fetchNotes(o.tdfObject.id, true);
+  };
+
+  // Render Functions
+  const renderHeader = () => {
+    let formattedDateTime = 'Time Not Recorded';
+    if (o.tdfObject.ts) {
+      formattedDateTime = formatDateTime(o.tdfObject.ts.toDate().toISOString());
+    }
+    const value = propertyOf(o.decryptedData)(displayFields?.header || 'id');
+    return (
+      <Stack direction="column">
+        <Typography variant="h6" sx={{ wordBreak: 'break-all' }}>
+          {getFieldTitle(displayFields?.header || 'id')}: {value}
+        </Typography>
+        <Typography variant="body1">{formattedDateTime}</Typography>
+      </Stack>
+    );
+  };
+
+  const renderDetailsAndNotes = () => {
+    const details = (displayFields?.details || []).map((field) => {
+      let value = propertyOf(o.decryptedData)(field);
+      if (typeof value === 'object' && value !== null) {
+        if ('country' in value) {
+          value = value.country;
+        } else {
+          value = JSON.stringify(value);
+        }
+      }
+      return (
+        <Box key={`${o.tdfObject.id}-${field}-details`} sx={{ wordBreak: 'break-all' }}>
+          <strong>{getFieldTitle(field)}</strong>: {value}
+        </Box>
+      );
+    });
+
+    const extractAndJoin = (attrArray: string[] | undefined, prefix: string = ''): string => {
+        if (!attrArray || attrArray.length === 0) return '';
+        const values = attrArray.map(attrUrl => attrUrl.split('/').pop()).filter(v => v && v.trim() !== '');
+        return values.length > 0 ? `${prefix}${values.join(' // ')}` : '';
+    }
+
+    const notes = objectNotes.length > 0 ? (
+      objectNotes.map((note, index) => {
+        let parsedNote: TDFObjectSearchAttributes = {};
+        try {
+          parsedNote = JSON.parse(note.tdfNote.search);
+        } catch (e) {
+          console.error("Failed to parse note:", e);
+        }
+
+        const classificationControl = extractAndJoin(parsedNote.attrClassification);
+        const needToKnowControls = extractAndJoin(parsedNote.attrNeedtoknow, classificationControl ? ' // ' : '');
+        const relToPrefix = (classificationControl || needToKnowControls) ? ' // rel to ' : parsedNote.attrRelto?.length ? 'rel to ' : '';
+        const relToControls = extractAndJoin(parsedNote.attrRelto, relToPrefix);
+
+        // Concatenate all parts for the final display
+        const controlsDisplay = `${classificationControl}${needToKnowControls}${relToControls}`;
+
+        return (
+          <Box key={`${o.tdfObject.id}-note-${index}`} sx={{ wordBreak: 'break-all', marginTop: 2 }}>
+            <strong>Note {index + 1}: {note.decryptedData}</strong>
+            {
+              <Box>
+                {/* Display the combined controls */}
+                <strong>Control Set:</strong> {controlsDisplay}
+              </Box>
+            }
+          </Box>
+        );
+      })
+    ) : (
+      <Box sx={{ marginTop: 2, color: 'gray' }}>
+        <em>No notes available for this object</em>
+      </Box>
+    );
+
+    return (<>{details}{notes}</>);
+  };
+
+
+  return (
+    <Accordion key={o.tdfObject.id} sx={{ mb: 2 }} defaultExpanded={true}>
+      <AccordionSummary expandIcon={<ExpandMore />}>
+        {renderHeader()}
+      </AccordionSummary>
+      <AccordionDetails>
+        {renderDetailsAndNotes()}
+        <Box sx={{ mt: 2 }}>
+          <TextField
+            label="Add Note"
+            value={noteText}
+            onChange={handleNoteChange}
+            fullWidth
+            multiline
+            rows={4}
+            variant="outlined"
+            sx={{ mb: 2 }}
+          />
+          <Button
+            onClick={handleNoteSubmit}
+            variant="contained"
+            color="primary"
+            sx={{ width: '100%' }}
+            disabled={!noteText.trim()}
+          >
+            Save Note
+          </Button>
+        </Box>
+
+        {/* Dynamic Dropdowns */}
+        <Box sx={{ mt: 2 }}>
+          {Object.keys(categorizedData).map((category) => {
+            const isMultiSelect = category === 'needtoknow' || category === 'relto';
+            const currentValue = localSelectedValues[category];
+            const selectValue = isMultiSelect ? (Array.isArray(currentValue) ? currentValue : []) : (currentValue || '');
+
+            return (
+              <Box key={category} sx={{ mb: 2 }}>
+                <FormControl fullWidth variant="outlined">
+                  <InputLabel>{category.charAt(0).toUpperCase() + category.slice(1)}</InputLabel>
+                  <Select
+                    label={category.charAt(0).toUpperCase() + category.slice(1)}
+                    value={selectValue}
+                    onChange={(e) => handleDropdownChange(category, e.target.value)}
+                    multiple={isMultiSelect}
+                  >
+                    {categorizedData[category].map((value) => (
+                      <MenuItem key={value} value={value}>
+                        {value}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+            );
+          })}
+        </Box>
+
+        <IconButton title="Show on map" sx={{ paddingLeft: 0, paddingBottom: 0 }} onClick={handleFlyToClick}>
+          <GpsFixed />
+        </IconButton>
+      </AccordionDetails>
+    </Accordion>
+  );
+}

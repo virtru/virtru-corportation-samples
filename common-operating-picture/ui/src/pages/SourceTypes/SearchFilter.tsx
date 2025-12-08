@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useContext } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { TdfObjectResponse, useRpcClient } from '@/hooks/useRpcClient';
+import { useRpcClient } from '@/hooks/useRpcClient';
 import { Alert, Backdrop, Box, Button, CircularProgress, Popover } from '@mui/material';
 import { FilterAlt } from '@mui/icons-material';
 import { useSourceType } from './SourceTypeContext';
@@ -9,10 +9,10 @@ import { RJSFSchema } from '@rjsf/utils';
 import Form, { IChangeEvent, withTheme } from '@rjsf/core';
 import { Theme as RJSFFormMuiTheme } from '@rjsf/mui';
 import { customizeValidator } from '@rjsf/validator-ajv8';
-import { BannerContext, ClassificationPriority, Classifications, extractValues } from '@/contexts/BannerContext';
+import { BannerContext, calculateBannerAttributes } from '@/contexts/BannerContext';
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string';
 import { LatLng, Map } from 'leaflet';
-import { TimestampSelector } from '@/proto/tdf_object/v1/tdf_object_pb';
+import { TimestampSelector } from '@/proto/tdf_object/v1/tdf_object_pb.ts';
 import dayjs from 'dayjs';
 import { Timestamp } from '@bufbuild/protobuf';
 import { useAuth } from '@/hooks/useAuth';
@@ -45,7 +45,6 @@ export function SearchFilter({ map }: Props) { //onSearch removed
 
   // Define entitlements and unavailableAttrs state correctly
   const [unavailableAttrs, setUnavailAttrs] = useState<string[]>([]);
-  //const [entitlements, setEntitlements] = useState<Set<string>>(new Set());
 
   // Use useAuth to get user and error status
   const { user, error: authCtxError } = useAuth();
@@ -64,9 +63,6 @@ export function SearchFilter({ map }: Props) { //onSearch removed
     activeEntitlements,
     setTdfObjects,
   } = useContext(BannerContext);
-
-  //console.log('Current Active Entitlements (SF):', activeEntitlements);
-
 
   const { queryTdfObjects } = useRpcClient();
 
@@ -146,27 +142,23 @@ export function SearchFilter({ map }: Props) { //onSearch removed
     }
   };
 
-  //useEffect(() => {
-  //  updateEntitlementsFromUser(user, setEntitlements);
-  //}, [user]);
+  // Moved some logic into the BannerContext
+  // const updateBanner = (response: TdfObjectResponse[]) => {
+  //   let classPriority = 0;
+  //   let needToKnow = new Set();
+  //   let relTo = new Set();
 
-  const updateBanner = (response: TdfObjectResponse[]) => {
-    let classPriority = 0;
-    let needToKnow = new Set();
-    let relTo = new Set();
+  //   setHasResults(true);
 
-    setHasResults(true);
-
-    response.forEach((o) => {
-      classPriority = Math.max(classPriority, ClassificationPriority[extractValues(o.decryptedData.attrClassification) as keyof typeof ClassificationPriority]);
-      needToKnow = new Set([...needToKnow, ...extractValues(o.decryptedData.attrNeedToKnow || []).split(', ')]);
-      relTo = new Set([...relTo, ...extractValues(o.decryptedData.attrRelTo || []).split(', ')]);
-    });
-
-    setClassification(Classifications[classPriority]);
-    setNeedToKnow([...needToKnow].join(', '));
-    setRelTo([...relTo].join(', '));
-  };
+  //   response.forEach((o) => {
+  //     classPriority = Math.max(classPriority, ClassificationPriority[extractValues(o.decryptedData.attrClassification) as keyof typeof ClassificationPriority]);
+  //     needToKnow = new Set([...needToKnow, ...extractValues(o.decryptedData.attrNeedToKnow || []).split(', ')]);
+  //     relTo = new Set([...relTo, ...extractValues(o.decryptedData.attrRelTo || []).split(', ')]);
+  //   });
+  //   setClassification(Classifications[classPriority]);
+  //   setNeedToKnow([...needToKnow].join(', '));
+  //   setRelTo([...relTo].join(', '));
+  // };
 
   const fetchTdfObjects = async (searchFormData: any) => {
     const tsRange = new TimestampSelector();
@@ -176,7 +168,6 @@ export function SearchFilter({ map }: Props) { //onSearch removed
       const dayJsValue = dayjs(startDate);
       tsRange.greaterOrEqualTo = Timestamp.fromDate(dayJsValue.toDate());
     }
-
     if (endDate) {
       const dayJsValue = dayjs(endDate);
       tsRange.lesserOrEqualTo = Timestamp.fromDate(dayJsValue.toDate());
@@ -191,7 +182,6 @@ export function SearchFilter({ map }: Props) { //onSearch removed
       const ne = bounds.getNorthEast();
       const se = bounds.getSouthEast();
       const sw = bounds.getSouthWest();
-
       const bboxPolygon: GeoJSON.Polygon = {
         type: 'Polygon',
         coordinates: [
@@ -200,14 +190,16 @@ export function SearchFilter({ map }: Props) { //onSearch removed
             [ne.lng, ne.lat],
             [se.lng, se.lat],
             [sw.lng, sw.lat],
-            // duplicated because polygon type requires the first and last coords to be the same
+            // duplicated because polygon type requires the
+            // first and last coords to be the same
             [nw.lng, nw.lat],
           ],
         ],
       };
       geoLocation = JSON.stringify(bboxPolygon);
     }
-
+    //console.log("Source Type ID in Search Filter:", srcTypeId);
+    //console.log("Search time range:", tsRange);
     return queryTdfObjects({
       srcType: srcTypeId,
       tsRange,
@@ -227,35 +219,11 @@ export function SearchFilter({ map }: Props) { //onSearch removed
       return;
     }
 
-    // Block search if unavliable attributes
+    // Block search if unavailiable attributes
     if (unavailableAttrs.length > 0) {
         console.warn('Attempted search with missing entitlements. Submission blocked.');
         return;
     }
-
-    /* Unused method for passing arry of classifications to backend to get all subordiante class items from query
-    const { attrClassification, startDate, endDate, ...searchJson } = searchFormData;
-    console.log("Attribute Class", attrClassification)
-
-    const simpleName = attrClassification? attrClassification.split('/').pop()?.toUpperCase() : undefined;
-
-    console.log("Simple Name:", simpleName);
-
-    let classificationsToSearch: string[] = [];
-    if (simpleName.length > 0) {
-        classificationsToSearch = getSubordinateClassifications(simpleName);
-
-    }
-    console.log("Attribute to search:", classificationsToSearch)
-
-    // Replace the single classification string with the expanded array in the JSON payload
-    if (classificationsToSearch.length > 0) {
-        searchJson.attrClassification = classificationsToSearch;
-        console.log("Search Class:", searchJson.attrClassification)
-    }
-
-    const queryPayload = { startDate, endDate, ...searchJson };
-    */
 
     try {
       setError('');
@@ -265,17 +233,24 @@ export function SearchFilter({ map }: Props) { //onSearch removed
       const response = await fetchTdfObjects(searchFormData);
 
       if (response.length) {
-        updateBanner(response);
+            const { classification, needToKnow, relTo } = calculateBannerAttributes(response);
+            setClassification(classification);
+            setNeedToKnow(needToKnow);
+            setRelTo(relTo);
+            setHasResults(true);
+            //console.log('Banner attributes updated from search results.', {classification, needToKnow, relTo});
+        } else {
+          // Clear banner if no results
+          setClassification('');
+          setNeedToKnow('');
+          setRelTo('');
+          setHasResults(false);
       }
 
-      //Added
       setSearchIsActive(false);
-
       setMenuAnchorEl(null);
       setFormData(searchFormData);
-
       setTdfObjects(response);
-      //onSearch(response);
 
       setSearchParams(params => {
         const queryState: QueryParamState = {
@@ -306,7 +281,6 @@ export function SearchFilter({ map }: Props) { //onSearch removed
 
   useEffect(() => {
     const query = searchParams.get('q');
-
     if (!query) {
       setFormData({});
       return;

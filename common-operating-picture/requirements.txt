@@ -1,0 +1,16 @@
+appdirs==1.4.4
+Faker==38.2.0
+geopy==2.4.1
+minio==7.2.20
+otdf-python==0.4.0
+pandas==2.3.3
+pip==25.3
+protogen==0.3.1
+psycopg2-binary==2.9.11
+pyarrow==22.0.0
+python-dotenv==1.2.1
+python_opensky==1.0.1
+shapely==2.1.2
+SQLAlchemy==2.0.44
+tqdm==4.67.1
+trino==0.336.0

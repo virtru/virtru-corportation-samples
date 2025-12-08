@@ -5,6 +5,7 @@ package tdf_object.v1;
 import "buf/validate/validate.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
+import "google/protobuf/wrappers.proto";
 
 option go_package = "github.com/virtru-corp/dsp-cop/api/proto/tdf_object/v1;tdf_objectv1";
 
@@ -114,6 +115,27 @@ message CreateTdfObjectResponse {
   string id = 1;
 }
 
+// Uses wrappers to enable optional fields
+message UpdateTdfObjectRequest {
+  string id = 1 [(buf.validate.field).required = true];
+  // source type of data (MARS? what else?)
+  google.protobuf.StringValue src_type = 2;
+  // geospatial data of location of data
+  google.protobuf.StringValue geo = 3;
+  // plaintext json search index
+  google.protobuf.StringValue search = 4;
+  // tdf bytes
+  google.protobuf.BytesValue tdf_blob = 5;
+  // tdf data uri
+  google.protobuf.StringValue tdf_uri = 6;
+  // timestamp of data
+  google.protobuf.Timestamp ts = 7;
+}
+
+message UpdateTdfObjectResponse {
+  string id = 1;
+}
+
 message GetTdfObjectRequest {
   string id = 1 [(buf.validate.field).required = true];
 }
@@ -169,6 +191,7 @@ message GetEntitlementsResponse {
 
 service TdfObjectService {
   rpc CreateTdfObject(CreateTdfObjectRequest) returns (CreateTdfObjectResponse) {}
+  rpc UpdateTdfObject(UpdateTdfObjectRequest) returns (UpdateTdfObjectResponse) {}
   rpc GetTdfObject(GetTdfObjectRequest) returns (GetTdfObjectResponse) {}
   rpc QueryTdfObjects(QueryTdfObjectsRequest) returns (QueryTdfObjectsResponse) {}
   rpc StreamTdfObjects(StreamTdfObjectsRequest) returns (stream StreamTdfObjectsResponse) {}
