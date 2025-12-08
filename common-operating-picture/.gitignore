@@ -1,7 +1,8 @@
 # Local development
 db-data
 dsp-keys
-
+#proto_vendor/
+#.venv/
 # Binary
 dsp-cop
 geos-*.apk
@@ -18,6 +19,7 @@ etc/
 
 # Bundle
 virtru-dsp-bundle-*
+virtru-dsp-bundle/
 
 # Node 
 node_modules/
