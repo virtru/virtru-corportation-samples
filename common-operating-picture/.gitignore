@@ -1,8 +1,9 @@
 # Local development
 db-data
 dsp-keys
-#proto_vendor/
+proto_vendor/
 #.venv/
+
 # Binary
 dsp-cop
 geos-*.apk
