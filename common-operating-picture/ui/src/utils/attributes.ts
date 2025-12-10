@@ -4,13 +4,55 @@
 import { attributes as policy } from '@root/sample.federal_policy.yaml';
 import { IChangeEvent } from '@rjsf/core';
 import { RJSFSchema } from '@rjsf/utils';
-import { ClassificationPriority } from '@/contexts/BannerContext'; // Ensure this path is correct
+import { ClassificationPriority, extractValues } from '@/contexts/BannerContext';
+import { TdfObjectResponse } from '@/hooks/useRpcClient';
 
 const namespace = policy[0].namespace;
 
-/**
- * Utility to calculate all subordinate classifications for a selected classification.
- */
+export const extractAttributeValueFromFqn = (fqn: string): string => {
+    const value = fqn.split('/').pop();
+    return (value || '').toUpperCase();
+};
+
+export const checkObjectEntitlements = (
+    tdfObject: TdfObjectResponse,
+    activeEntitlements: Set<string>
+): boolean => {
+    // Get the raw attribute data from the object
+    const classification = tdfObject.decryptedData.attrClassification;
+    const needToKnow = tdfObject.decryptedData.attrNeedToKnow || [];
+    const relTo = tdfObject.decryptedData.attrRelTo || [];
+
+    // Process attributes
+    const objClassification = extractValues(classification);
+    const objNeedToKnows = extractValues(needToKnow);
+    const objRelTo = extractValues(relTo);
+
+    // Collect all unique
+    const allObjectAttributes = [
+        ...objClassification.split(', ').filter(v => v.trim() !== ''),
+        ...objNeedToKnows.split(', ').filter(v => v.trim() !== ''),
+        ...objRelTo.split(', ').filter(v => v.trim() !== ''),
+    ];
+
+    // Convert active entitlements to uppercase
+    const trimmedEntitlements = new Set(
+        [...activeEntitlements].map(extractAttributeValueFromFqn)
+    );
+
+    // Check if any object attribute is not present in the active entitlements
+    for (const attr of allObjectAttributes) {
+        if (!trimmedEntitlements.has(attr.toUpperCase())) {
+            // console.log(`Missing entitlement for attribute: ${attr}`);
+            return true; // Contains an unavailable attribute
+        }
+    }
+
+    return false; // User is entitled to view object
+};
+
+
+// Utility to calculate all subordinate classifications for a selected classification.
 export const getSubordinateClassifications = (selectedClass: string): string[] => {
     // Look up the priority of the selected class
     const selectedPriority = ClassificationPriority[selectedClass as keyof typeof ClassificationPriority];
@@ -22,9 +64,7 @@ export const getSubordinateClassifications = (selectedClass: string): string[] =
     );
 };
 
-/**
- * Checks form data against user entitlements to find unavailable attributes.
- */
+// Checks form data against user entitlements to find unavailable attributes.
 export const checkAndSetUnavailableAttributes = (
     data: IChangeEvent<any, RJSFSchema>,
     attrFields: string[] | undefined,
@@ -56,9 +96,7 @@ export const checkAndSetUnavailableAttributes = (
     setUnavailAttrs(pendingUnavailAttrs);
 };
 
-/**
- * Sets the entitlements state based on the user object from useAuth.
- */
+// Sets the entitlements state based on the user object from useAuth.
 export const updateEntitlementsFromUser = (
     user: { entitlements: string[] } | null | undefined,
     setEntitlements: React.Dispatch<React.SetStateAction<Set<string>>>
