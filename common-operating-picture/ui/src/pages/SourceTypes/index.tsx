@@ -123,6 +123,8 @@ export function SourceTypes() {
           };
         });
 
+      //console.log('Vehicle data:', vehicleData);
+
       setVehicleData(vehicleData);
     } catch (error) {
       console.error('Error fetching vehicles:', error);

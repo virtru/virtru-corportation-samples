@@ -5,7 +5,7 @@ import { attributes as policy } from '@root/sample.federal_policy.yaml';
 import { IChangeEvent } from '@rjsf/core';
 import { RJSFSchema } from '@rjsf/utils';
 import { ClassificationPriority, extractValues } from '@/contexts/BannerContext';
-import { TdfObjectResponse } from '@/hooks/useRpcClient';
+import { TdfObjectResponse, TdfNotesResponse } from '@/hooks/useRpcClient';
 
 const namespace = policy[0].namespace;
 
@@ -14,10 +14,13 @@ export const extractAttributeValueFromFqn = (fqn: string): string => {
     return (value || '').toUpperCase();
 };
 
-export const checkObjectEntitlements = (
-    tdfObject: TdfObjectResponse,
-    activeEntitlements: Set<string>
-): boolean => {
+interface TDFObjectSearchAttributes {
+  attrClassification?: string[];
+  attrNeedtoknow?: string[];
+  attrRelto?: string[];
+}
+
+export const checkObjectEntitlements = (tdfObject: TdfObjectResponse, activeEntitlements: Set<string>): boolean => {
     // Get the raw attribute data from the object
     const classification = tdfObject.decryptedData.attrClassification;
     const needToKnow = tdfObject.decryptedData.attrNeedToKnow || [];
@@ -43,6 +46,61 @@ export const checkObjectEntitlements = (
     // Check if any object attribute is not present in the active entitlements
     for (const attr of allObjectAttributes) {
         if (!trimmedEntitlements.has(attr.toUpperCase())) {
+            // console.log(`Missing entitlement for attribute: ${attr}`);
+            return true; // Contains an unavailable attribute
+        }
+    }
+
+    return false; // User is entitled to view object
+};
+
+export const checkNoteEntitlements = (tdfNote: TdfNotesResponse, activeEntitlements: Set<string>): boolean => {
+
+    let searchAttributes: TDFObjectSearchAttributes = {
+        attrClassification: [],
+        attrNeedtoknow: [],
+        attrRelto: []
+    };
+
+    try {
+        // Parse the JSON string from tdfNote.search
+        searchAttributes = JSON.parse(tdfNote.tdfNote.search || '{}');
+    } catch (e) {
+        console.error("Failed to parse note search attributes for entitlement check:", e);
+        return true;
+    }
+
+    // Get the raw attribute data from the note
+    const classification = searchAttributes.attrClassification;
+    const needToKnow = searchAttributes.attrNeedtoknow || [];
+    const relTo = searchAttributes.attrRelto || [];
+
+    const extractNoteAttr = (attrArray: string[] | undefined): string[] => {
+        if (!attrArray || attrArray.length === 0) return [];
+        return attrArray.map((attrUrl: string) =>
+            attrUrl.split('/').pop()?.toUpperCase() || ''
+        ).filter(v => v.trim() !== '');
+    };
+
+    const objClassification = extractNoteAttr(classification);
+    const objNeedToKnows = extractNoteAttr(needToKnow);
+    const objRelTo = extractNoteAttr(relTo);
+
+    // Collect all unique
+    const allObjectAttributes = [
+        ...objClassification,
+        ...objNeedToKnows,
+        ...objRelTo,
+    ];
+
+    // Convert active entitlements to uppercase
+    const trimmedEntitlements = new Set(
+        [...activeEntitlements].map(extractAttributeValueFromFqn)
+    );
+
+    // Check if any object attribute is not present in the active entitlements
+    for (const attr of allObjectAttributes) {
+        if (!trimmedEntitlements.has(attr)) { 
             // console.log(`Missing entitlement for attribute: ${attr}`);
             return true; // Contains an unavailable attribute
         }

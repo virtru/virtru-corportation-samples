@@ -4,8 +4,9 @@ import { TdfObjectResponse } from '@/hooks/useRpcClient';
 
 export const extractValues = (values: string[] | object[] | string |  object) => {
     const vals = Array.isArray(values) ? values : [values];
+    const filteredVals = vals.filter(v => v);
     const extract = (v: string) => v.split('/').pop()?.toUpperCase();
-    return Array.from(new Set(vals.map((v) => extract(typeof v === 'string' ? v : v.value)))).join(', ');
+    return Array.from(new Set(filteredVals.map((v) => extract(typeof v === 'string' ? v : v.value)))).join(', ');
 };
 
 export const calculateBannerAttributes = (tdfs: TdfObjectResponse[]) => {
