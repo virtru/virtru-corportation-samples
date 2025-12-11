@@ -71,6 +71,7 @@ export function TopBar() {
       </Menu>
 
       <ClassificationSelectorModal
+        key={isClassificationModalOpen ? 'open' : 'closed'}
         isOpen={isClassificationModalOpen}
         onClose={handleModalClose}
         userEntitlements={userEntitlements} // Pass the full entitlements

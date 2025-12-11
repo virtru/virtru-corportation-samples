@@ -119,13 +119,13 @@ export function TdfObjectResult({ tdfObjectResponse: o, categorizedData, onFlyTo
     const classificationSelected = localSelectedValues['classification'];
 
     if (!trimmedNoteText) {
-      console.log("Note Submission Error: Note needs to have text, cannot be empty.");
+      window.alert("Note Submission Error: Note needs to have text, cannot be empty.");
       return;
     }
 
     const hasClassificationEntitlements = Object.keys(categorizedData).includes('classification');
     if (hasClassificationEntitlements && !classificationSelected) {
-      console.log("Note Submission Error: Must have a classification attribute selected.");
+      window.alert("Note Submission Error: Must have a classification attribute selected.");
       return;
     }
 

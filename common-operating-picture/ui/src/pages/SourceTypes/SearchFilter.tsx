@@ -214,7 +214,7 @@ export function SearchFilter({ map }: Props) { //onSearch removed
 
       const response = await fetchTdfObjects(searchFormData);
 
-      console.log('Active Entitlements:', activeEntitlements);
+      //console.log('Active Entitlements:', activeEntitlements);
 
       const filteredResponse = response.filter(tdfObject => {
           // Keep the queried tdf object if it does not contain unavailable attributes
