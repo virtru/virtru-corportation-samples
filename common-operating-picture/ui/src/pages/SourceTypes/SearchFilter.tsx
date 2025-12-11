@@ -180,8 +180,6 @@ export function SearchFilter({ map }: Props) { //onSearch removed
       };
       geoLocation = JSON.stringify(bboxPolygon);
     }
-    //console.log("Source Type ID in Search Filter:", srcTypeId);
-    //console.log("Search time range:", tsRange);
     return queryTdfObjects({
       srcType: srcTypeId,
       tsRange,
@@ -214,8 +212,6 @@ export function SearchFilter({ map }: Props) { //onSearch removed
 
       const response = await fetchTdfObjects(searchFormData);
 
-      //console.log('Active Entitlements:', activeEntitlements);
-
       const filteredResponse = response.filter(tdfObject => {
           // Keep the queried tdf object if it does not contain unavailable attributes
           return !checkObjectEntitlements(tdfObject, activeEntitlements);
@@ -227,7 +223,6 @@ export function SearchFilter({ map }: Props) { //onSearch removed
             setNeedToKnow(needToKnow);
             setRelTo(relTo);
             setHasResults(true);
-            //console.log('Banner attributes updated from search results.', {classification, needToKnow, relTo});
         } else {
           // Clear banner if no results
           setClassification('');

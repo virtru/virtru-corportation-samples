@@ -99,8 +99,6 @@ export function SourceTypes() {
       const dayjsStart = dayjs().subtract(24000, 'hour');
       tsRange.greaterOrEqualTo = Timestamp.fromDate(dayjsStart.toDate());
 
-      //console.log("Hardcoded Search time range:", tsRange);
-
       const response = await queryTdfObjects({
         srcType: id,
         tsRange: tsRange,
@@ -123,8 +121,6 @@ export function SourceTypes() {
           };
         });
 
-      //console.log('Vehicle data:', vehicleData);
-
       setVehicleData(vehicleData);
     } catch (error) {
       console.error('Error fetching vehicles:', error);
@@ -141,7 +137,6 @@ export function SourceTypes() {
   useEffect(() => {
 
     if (vehicleData.length === 0) {
-        //console.log("No vehicles to display, skipping refresh.");
         return;
     }
 
