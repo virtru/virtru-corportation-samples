@@ -49,11 +49,6 @@ export function CreateDialog({ open, onClose }: Props) {
     activeEntitlements,
   } = useContext(BannerContext);
 
-  //console.log('Current Active Classification:', activeClassification);
-  //console.log('Current Active Need to Know:', activeNeedToKnow);
-  //console.log('Current Active Rel To:', activeRelTo);
-  //console.log('Current Active Entitlements (CD):', activeEntitlements);
-
   const formRef = useRef<Form<any, RJSFSchema> | null>(null);
 
   const { user, error: authCtxError } = useAuth();
@@ -132,7 +127,6 @@ export function CreateDialog({ open, onClose }: Props) {
   };
 
   const handleSubmit = async (data: IChangeEvent<any, RJSFSchema>) => {
-    //console.log('Form submission initiated with data:', data);
     const { formData } = data;
     if (!formData) {
       return;

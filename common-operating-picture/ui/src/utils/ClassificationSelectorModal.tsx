@@ -118,9 +118,6 @@ export function ClassificationSelectorModal({ isOpen, onClose, userEntitlements 
     }
   };
 
-  // User entitlements log
-  //console.log('Modal Prop (userEntitlements):', userEntitlements);
-
   const extractSimpleNames = (attributeList: AttributeValue[]): string[] => {
     return attributeList
         .map(attr => attr.value.split('/').pop()?.toUpperCase())
@@ -189,8 +186,6 @@ export function ClassificationSelectorModal({ isOpen, onClose, userEntitlements 
     //Update both the display classification and the active entitlements set
     setClassification(activeClassification);
     setActiveEntitlements(newActiveEntitlements);
-
-    //console.log("New Active Entitlements:", newActiveEntitlements)
 
     //Refresh results after setting new classification
     setHasResults(false);

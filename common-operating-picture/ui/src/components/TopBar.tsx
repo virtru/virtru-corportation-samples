@@ -6,9 +6,6 @@ import { ClassificationSelectorModal } from '@/utils/ClassificationSelectorModal
 
 export function TopBar() {
   const { user, signOut } = useAuth();
-
-  //console.log('1. TopBar Raw Entitlements:', user?.entitlements);
-
   const [accountMenuAnchor, setAccountMenuAnchor] = useState<null | HTMLElement>(null);
   const accountMenuOpen = Boolean(accountMenuAnchor);
   useContext(BannerContext);

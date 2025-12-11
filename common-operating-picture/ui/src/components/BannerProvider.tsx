@@ -27,8 +27,6 @@ export const BannerProvider = ({ children }: { children: ReactNode }) => {
         const userEntitlements = user?.entitlements;
         const isUserLoaded = user && userEntitlements && userEntitlements[0] !== "loading";
 
-        //console.log("User Entitlements", userEntitlements);
-
         if (isUserLoaded && !isEntitlementsInitialized) {
 
             const initialEntitlements = userEntitlements.length > 0
@@ -40,8 +38,6 @@ export const BannerProvider = ({ children }: { children: ReactNode }) => {
 
             // Mark that entitlements have been initilized
             setIsEntitlementsInitialized(true);
-
-            //console.log("Entitlements Initialized:", initialEntitlements);
         }
     }, [user, isEntitlementsInitialized]); // Dependencies include 'user' and new flag
 

@@ -66,7 +66,6 @@ export function useRpcClient() {
   async function transformNoteObject(tdfNote: TdfNote): Promise<TdfNotesResponse | null> {
     try {
       const decryptedData = await decrypt(tdfNote.tdfBlob.buffer);
-      //console.log('Decrypted Data:', decryptedData);
 
       // Attempt to parse the decrypted data
       try {
