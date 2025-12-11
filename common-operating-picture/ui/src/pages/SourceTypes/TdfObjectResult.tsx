@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useContext } from 'react';
 import { LatLng } from 'leaflet';
 import { Accordion, AccordionDetails, AccordionSummary, Box, Button,
   IconButton, TextField, Stack, Typography, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
@@ -10,6 +10,8 @@ import { propertyOf } from 'lodash';
 import { CreateTdfNoteRequest } from '@/proto/tdf_object/v1/tdf_note_pb';
 import { PartialMessage } from '@bufbuild/protobuf';
 import { useTDF } from '@/hooks/useTdf';
+import { BannerContext } from '@/contexts/BannerContext';
+import { checkNoteEntitlements } from '@/utils/attributes';
 
 // Note data structure to pass note attributes back to parent
 interface NoteAttributeData {
@@ -46,6 +48,8 @@ export function TdfObjectResult({ tdfObjectResponse: o, categorizedData, onFlyTo
 
   const prevObjectId = useRef<string | null>(null);
 
+  const { activeEntitlements } = useContext(BannerContext);
+
   // fetchNotes given objectId
   const fetchNotes = useCallback(async (objectId: string, isNoteSubmission = false) => {
 
@@ -60,11 +64,18 @@ export function TdfObjectResult({ tdfObjectResponse: o, categorizedData, onFlyTo
   try {
     //console.log(`Fetching notes for object ID: ${objectId}`);
     const notes = await queryNotes({ parentId: objectId });
-    setObjectNotes(notes);
+
+    // Filter notes for attributes not in activeEntitlements
+    const filteredNotes = notes.filter(note => {
+              // Keep the queried note if it does not contain unavailable attributes
+              return !checkNoteEntitlements(note, activeEntitlements);
+          });
+
+    setObjectNotes(filteredNotes);
     //console.log("Fetched notes: ", notes);
 
     // Map notes to the simpler structure for parent
-    const noteAttributes = notes.map(note => ({
+    const noteAttributes = filteredNotes.map(note => ({
       noteId: note.tdfNote.id,
       searchAttributes: note.tdfNote.search,
     }));
@@ -108,13 +119,13 @@ export function TdfObjectResult({ tdfObjectResponse: o, categorizedData, onFlyTo
     const classificationSelected = localSelectedValues['classification'];
 
     if (!trimmedNoteText) {
-      console.log("Note Submission Error: Note needs to have text, cannot be empty.");
+      window.alert("Note Submission Error: Note needs to have text, cannot be empty.");
       return;
     }
 
     const hasClassificationEntitlements = Object.keys(categorizedData).includes('classification');
     if (hasClassificationEntitlements && !classificationSelected) {
-      console.log("Note Submission Error: Must have a classification attribute selected.");
+      window.alert("Note Submission Error: Must have a classification attribute selected.");
       return;
     }
 

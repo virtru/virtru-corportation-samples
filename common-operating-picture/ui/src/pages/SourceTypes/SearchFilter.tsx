@@ -16,7 +16,7 @@ import { TimestampSelector } from '@/proto/tdf_object/v1/tdf_object_pb.ts';
 import dayjs from 'dayjs';
 import { Timestamp } from '@bufbuild/protobuf';
 import { useAuth } from '@/hooks/useAuth';
-import { checkAndSetUnavailableAttributes } from '@/utils/attributes';
+import { checkAndSetUnavailableAttributes, checkObjectEntitlements } from '@/utils/attributes';
 
 const validator = customizeValidator<any>();
 const SearchForm = withTheme<any, RJSFSchema>(RJSFFormMuiTheme);
@@ -142,24 +142,6 @@ export function SearchFilter({ map }: Props) { //onSearch removed
     }
   };
 
-  // Moved some logic into the BannerContext
-  // const updateBanner = (response: TdfObjectResponse[]) => {
-  //   let classPriority = 0;
-  //   let needToKnow = new Set();
-  //   let relTo = new Set();
-
-  //   setHasResults(true);
-
-  //   response.forEach((o) => {
-  //     classPriority = Math.max(classPriority, ClassificationPriority[extractValues(o.decryptedData.attrClassification) as keyof typeof ClassificationPriority]);
-  //     needToKnow = new Set([...needToKnow, ...extractValues(o.decryptedData.attrNeedToKnow || []).split(', ')]);
-  //     relTo = new Set([...relTo, ...extractValues(o.decryptedData.attrRelTo || []).split(', ')]);
-  //   });
-  //   setClassification(Classifications[classPriority]);
-  //   setNeedToKnow([...needToKnow].join(', '));
-  //   setRelTo([...relTo].join(', '));
-  // };
-
   const fetchTdfObjects = async (searchFormData: any) => {
     const tsRange = new TimestampSelector();
     const { startDate, endDate, ...searchJson } = searchFormData;
@@ -198,8 +180,6 @@ export function SearchFilter({ map }: Props) { //onSearch removed
       };
       geoLocation = JSON.stringify(bboxPolygon);
     }
-    //console.log("Source Type ID in Search Filter:", srcTypeId);
-    //console.log("Search time range:", tsRange);
     return queryTdfObjects({
       srcType: srcTypeId,
       tsRange,
@@ -232,13 +212,17 @@ export function SearchFilter({ map }: Props) { //onSearch removed
 
       const response = await fetchTdfObjects(searchFormData);
 
-      if (response.length) {
-            const { classification, needToKnow, relTo } = calculateBannerAttributes(response);
+      const filteredResponse = response.filter(tdfObject => {
+          // Keep the queried tdf object if it does not contain unavailable attributes
+          return !checkObjectEntitlements(tdfObject, activeEntitlements);
+      });
+
+      if (filteredResponse.length) {
+            const { classification, needToKnow, relTo } = calculateBannerAttributes(filteredResponse);
             setClassification(classification);
             setNeedToKnow(needToKnow);
             setRelTo(relTo);
             setHasResults(true);
-            //console.log('Banner attributes updated from search results.', {classification, needToKnow, relTo});
         } else {
           // Clear banner if no results
           setClassification('');
@@ -250,7 +234,7 @@ export function SearchFilter({ map }: Props) { //onSearch removed
       setSearchIsActive(false);
       setMenuAnchorEl(null);
       setFormData(searchFormData);
-      setTdfObjects(response);
+      setTdfObjects(filteredResponse);
 
       setSearchParams(params => {
         const queryState: QueryParamState = {

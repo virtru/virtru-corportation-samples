@@ -13,7 +13,7 @@ export const BannerProvider = ({ children }: { children: ReactNode }) => {
     // Moved method for managing the tdfobjects
     const [tdfObjects, setTdfObjects] = useState<TdfObjectResponse[]>([]);
 
-    // Initialize with an empty Set or the default practice set if needed for initial rendering
+    // Initialize with default
     const [activeEntitlements, setActiveEntitlements] = useState(new Set<string>(["NoAccess"]));
 
     // Tracks if entitlements have been initialized from the user object
@@ -23,19 +23,9 @@ export const BannerProvider = ({ children }: { children: ReactNode }) => {
     const { user } = useAuth();
 
     useEffect(() => {
-        // Condition Check:
-        // 1. Check if the user object (and entitlements) is loaded (i.e., not the initial 'loading' array).
-        // 2. Check if the entitlements **haven't** been initialized yet.
-
-        // Assuming user?.entitlements will eventually be an array of actual entitlements
-        // or an empty array, and not the literal string array ["loading"].
-        // We check for the presence of user.entitlements AND that the length > 0 OR user is fully loaded.
-
-        // **Updated Logic for Initialization**
+        // Initialization
         const userEntitlements = user?.entitlements;
         const isUserLoaded = user && userEntitlements && userEntitlements[0] !== "loading";
-
-        //console.log("User Entitlements", userEntitlements);
 
         if (isUserLoaded && !isEntitlementsInitialized) {
 
@@ -48,8 +38,6 @@ export const BannerProvider = ({ children }: { children: ReactNode }) => {
 
             // Mark that entitlements have been initilized
             setIsEntitlementsInitialized(true);
-
-            //console.log("Entitlements Initialized:", initialEntitlements);
         }
     }, [user, isEntitlementsInitialized]); // Dependencies include 'user' and new flag
 

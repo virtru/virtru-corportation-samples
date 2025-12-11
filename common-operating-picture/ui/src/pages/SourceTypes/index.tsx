@@ -99,8 +99,6 @@ export function SourceTypes() {
       const dayjsStart = dayjs().subtract(24000, 'hour');
       tsRange.greaterOrEqualTo = Timestamp.fromDate(dayjsStart.toDate());
 
-      //console.log("Hardcoded Search time range:", tsRange);
-
       const response = await queryTdfObjects({
         srcType: id,
         tsRange: tsRange,
@@ -137,6 +135,11 @@ export function SourceTypes() {
 
   // Refresh vehicle data every so often
   useEffect(() => {
+
+    if (vehicleData.length === 0) {
+        return;
+    }
+
     const REFRESH_INTERVAL_MS = 1000;
 
     const intervalId = setInterval(async () => {
