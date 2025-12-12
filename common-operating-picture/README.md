@@ -135,56 +135,21 @@ To install necessary dependencies automatically, run the provided script:
 You need SSL certificates for local development.
 
 **Option A: Manual Setup**
-If the make command is not available, run the following:
+Run the key generation script:
 
-   ```bash
-   # Create the keys directory
-   mkdir -p dsp-keys
-
-   # Install the Certificate Authority
-   mkcert -install
-
-   # Generate the certs
-   mkcert -cert-file dsp-keys/local-dsp.virtru.com.pem -key-file dsp-keys/local-dsp.virtru.com.key.pem local-dsp.virtru.com "*.local-dsp.virtru.com" localhost
-
-   # Generate keys for KAS and PolicyImportExport artifact signing
-   ./.github/scripts/init-temp-keys.sh
-
-   # For the following:
-   cd dsp-keys/
-
-   # If the above script fails, run:
-   openssl rand -hex 32 > encrypted-search.key
-
-   # Copy rootCA.pem
-   cp ~/.local/share/mkcert/rootCA.pem ./rootCA.pem
-
-   # 755 dsp-keys/ content
-   chmod -R 755 *
-   ```
-
-# OPTIONAL: ** Note currently functional** generate temporary x509 certificates
-   ```bash
-   ./.github/scripts/x509-temp-keys.sh
-   ```
-
-> **Important:** Ensure you have `chmod 755` permissions set for the certificates in `dsp-keys`.
+```bash
+./ubuntu_cop_keys.sh
+```
 
 **Option B: Make Command**
 ** Note: you can use `'make dev-certs'` as a shortcut to generate the development certs **
 
-   **Currently NonFunctional - Use Manual Setup above**
+**Currently NonFunctional - Use the script above**
 
-   ```bash
-   # Make command
-   make dev-certs
-
-   # Copy rootCA.pem
-   cp ~/.local/share/mkcert/rootCA.pem ./dsp-keys/rootCA.pem
-
-   # 755 dsp-keys/ content
-   chmod -R 755 dsp-keys/
-   ```
+```bash
+# Make command
+make dev-certs
+```
 
 ### Step 2: Unpack the Bundle
 
