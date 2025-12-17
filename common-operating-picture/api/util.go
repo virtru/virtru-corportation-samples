@@ -27,6 +27,7 @@ func prepObjForResponse(in db.TdfObject) *tdf_objectv1.TdfObject {
 		Ts:      timestamppb.New(in.Ts.Time),
 		SrcType: in.SrcType,
 		Geo:     geo,
+		Search:  string(in.Search),
 		TdfBlob: in.TdfBlob,
 		TdfUri:  in.TdfUri.String,
 	}
@@ -38,6 +39,7 @@ func prepNoteForResponse(in db.TdfNote) *tdf_notev1.TdfNote {
 		Id:       in.ID.String(),
 		Ts:       timestamppb.New(in.Ts.Time),
 		ParentId: in.ParentID.String(),
+		Search:   string(in.Search),
 		TdfBlob:  in.TdfBlob,
 		TdfUri:   in.TdfUri.String,
 	}
@@ -107,6 +109,7 @@ func dbQuerySearchAndGeo(ctx context.Context, query *db.Queries, params db.ListT
 			SrcType: item.SrcType,
 			Geo:     item.Geo.(*geos.Geom),
 			TdfBlob: item.TdfBlob,
+			Search:  item.Search,
 		}))
 	}
 	return objs, nil
@@ -125,6 +128,7 @@ func dbQuerySearch(ctx context.Context, query *db.Queries, params db.ListTdfObje
 			SrcType: item.SrcType,
 			Geo:     item.Geo.(*geos.Geom),
 			TdfBlob: item.TdfBlob,
+			Search:  item.Search,
 		}))
 	}
 	return objs, nil
@@ -143,6 +147,7 @@ func dbQueryGeo(ctx context.Context, query *db.Queries, params db.ListTdfObjects
 			SrcType: item.SrcType,
 			Geo:     item.Geo.(*geos.Geom),
 			TdfBlob: item.TdfBlob,
+			Search:  item.Search,
 		}))
 	}
 	return objs, nil
@@ -161,6 +166,7 @@ func dbQuery(ctx context.Context, query *db.Queries, params db.ListTdfObjectsPar
 			SrcType: item.SrcType,
 			Geo:     item.Geo.(*geos.Geom),
 			TdfBlob: item.TdfBlob,
+			Search:  item.Search,
 		}))
 	}
 	return objs, nil

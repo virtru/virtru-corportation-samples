@@ -6,10 +6,17 @@ interface VehicleDataItem {
   id: string;
   pos: { lat: number; lng: number };
   data? : {
-    attrClassification: string;
-    attrNeedToKnow: string[];
-    attrRelTo: string[];
     vehicleName: string;
+    callsign?: string;
+    origin?: string;
+    destination?: string;
+    speed?: string;
+    altitude?: string;
+    aircraft_type?: string;
+
+    attrClassification?: string | string[];
+    attrNeedToKnow?: string[];
+    attrRelTo?: string[];
   };
 }
 

@@ -25,41 +25,49 @@ export function useRpcClient() {
     console.log("TDF Object Cache cleared.");
   }
 
-  // Modified from original to handle moving objects and caching
+  // Modified to merge Dynamic (Plaintext) and Static (Encrypted) data
   async function transformTdfObject(tdfObject: TdfObject): Promise<TdfObjectResponse> {
-  const objectId = tdfObject.id;
+    const objectId = tdfObject.id;
 
-    // Cache Check
-    if (tdfObjectCache.has(objectId)) {
-      //console.debug(`Cache match for: ${objectId}`);
-      const decryptedData = tdfObjectCache.get(objectId);
-      return {
-        tdfObject,
-        decryptedData,
-      };
+    // 1. Extract Dynamic Data from Plaintext Search Field
+    // This comes from sim_data3.py (Speed, Altitude, Heading)
+    let dynamicData = {};
+    try {
+      if (tdfObject.search && tdfObject.search !== "null") {
+        dynamicData = JSON.parse(tdfObject.search);
+      }
+    } catch (e) {
+      console.warn("Failed to parse dynamic metadata", e);
     }
 
-    // If not in cache, proceed to decrypt
-    let decryptedData = null;
 
-    if (tdfObject.tdfBlob && tdfObject.tdfBlob.length > 0) {
+    let staticData = {};
+    
+    // Check Cache first
+    if (tdfObjectCache.has(objectId)) {
+      staticData = tdfObjectCache.get(objectId);
+    } 
+    // If not in cache, decrypt the blob
+    else if (tdfObject.tdfBlob && tdfObject.tdfBlob.length > 0) {
       try {
-        console.debug(`Cache miss, decrypting TDF object ID: ${objectId}`);
         const decryptedPayload = await decrypt(tdfObject.tdfBlob.buffer);
-        decryptedData = JSON.parse(decryptedPayload);
+        staticData = JSON.parse(decryptedPayload);
 
-        // Store vehicles in cache
+        // Cache the static identity data so we don't re-decrypt every frame
         if (tdfObject.srcType === 'vehicles') {
-          tdfObjectCache.set(objectId, decryptedData);
+          tdfObjectCache.set(objectId, staticData);
         }
       } catch (err) {
-        console.error('Error decrypting or parsing data:', err);
+        console.error('Error decrypting static data:', err);
       }
     }
 
+    // 3. Merge them into one object for the UI
+    const mergedData = { ...staticData, ...dynamicData };
+
     return {
       tdfObject,
-      decryptedData,
+      decryptedData: mergedData, 
     };
   }
 

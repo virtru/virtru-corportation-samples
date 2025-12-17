@@ -57,7 +57,7 @@ func (s *TdfObjectServer) CreateTdfNote(
 	search := []byte(req.Msg.Search)
 	if len(search) == 0 {
 		// todo: figure out how to use with NULL db type
-		search = []byte("null")
+		search = []byte("{}")
 	}
 
 	// Convert the string to uuid.UUID
@@ -201,7 +201,7 @@ func (s *TdfObjectServer) CreateTdfObject(
 	search := []byte(req.Msg.Search)
 	if len(search) == 0 {
 		// todo: figure out how to use with NULL db type
-		search = []byte("null")
+		search = []byte("{}")
 	}
 
 	var ts pgtype.Timestamp
@@ -442,7 +442,7 @@ func (s *TdfObjectServer) QueryTdfObjects(
 		}
 
 		// remove search string from results to reduce risk of leaking sensitive data
-		t.Search = ""
+		// t.Search = ""
 		filteredTdfObjects = append(filteredTdfObjects, t)
 	}
 
