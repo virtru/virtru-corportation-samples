@@ -1,4 +1,4 @@
-import { useEffect, useState, useContext, useCallback } from 'react';
+import { useEffect, useState, useContext, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { LayersControl, MapContainer, TileLayer } from 'react-leaflet';
 import { LatLng, Map } from 'leaflet';
@@ -21,13 +21,20 @@ import { Timestamp } from '@bufbuild/protobuf';
 import dayjs from 'dayjs';
 
 export interface VehicleDataItem {
-    id: string;
-    pos: { lat: number; lng: number };
-    data? : {
-        attrClassification: string;
-        attrNeedToKnow: string[];
-        attrRelTo: string[];
-        vehicleName: string;
+  id: string;
+  pos: { lat: number; lng: number };
+  data? : {
+    vehicleName: string;
+    callsign?: string;
+    origin?: string;
+    destination?: string;
+    speed?: string;
+    altitude?: string;
+    aircraft_type?: string;
+
+    attrClassification?: string | string[];
+    attrNeedToKnow?: string[];
+    attrRelTo?: string[];
     }
   }
 
@@ -43,10 +50,27 @@ export function SourceTypes() {
   const { getSrcType } = useRpcClient();
   const [srcType, setSrcType] = useState<SrcType>();
 
-
-  // New tdfobject handling
-  const { tdfObjects, setTdfObjects } = useContext(BannerContext);
+  const { tdfObjects, setTdfObjects, activeEntitlements } = useContext(BannerContext);
   const { queryTdfObjects } = useRpcClient();
+
+  const [vehicleData, setVehicleData] = useState<VehicleDataItem[]>([]);
+  const vehicleSourceTypeId = "vehicles";
+
+  const filteredVehicleData = useMemo(() => {
+    if (!activeEntitlements || activeEntitlements.size === 0 || activeEntitlements.has("NoAccess")) {
+      return vehicleData;
+    }
+
+    return vehicleData.filter(vehicle => {
+      const classification = vehicle.data?.attrClassification;
+      if (!classification) return true; 
+      
+      const classStr = Array.isArray(classification) ? classification[0] : classification;
+      if (!classStr) return true;
+      
+      return activeEntitlements.has(classStr);
+    });
+  }, [vehicleData, activeEntitlements]);
 
   const fetchSrcType = useCallback(async (id: string) => {
     try {
@@ -88,9 +112,6 @@ export function SourceTypes() {
     }
     map.flyTo({ lat, lng }, map.getZoom());
   }, [map]);
-
-  const [vehicleData, setVehicleData] = useState<VehicleDataItem[]>([]);
-  const vehicleSourceTypeId = "vehicles";
 
   const fetchVehicles = useCallback(async (id: string) => {
     try {
@@ -185,10 +206,10 @@ export function SourceTypes() {
             <MapContainer style={{ width: '100%', height: '80vh' }} center={[0, 0]} zoom={3} ref={setMap}>
               <TileLayer url={config.tileServerUrl} />
                 <LayersControl position="topright">
-                      {vehicleData.length > 0 && (
+                      {filteredVehicleData.length > 0 && (
                     <LayersControl.Overlay name="Planes" checked>
-                      {/* Vehicle Layer */}
-                      <VehicleLayer vehicleData={vehicleData} />
+                      {/* Vehicle Layer - key forces re-render when entitlements change */}
+                      <VehicleLayer key={`vehicles-${activeEntitlements.size}`} vehicleData={filteredVehicleData} />
                     </LayersControl.Overlay>
                     )}
                       {/* TDF Object Layer */}
