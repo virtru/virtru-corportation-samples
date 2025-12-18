@@ -21,10 +21,11 @@ interface VehicleDataItem {
 }
 
 interface VehicleLayerProps {
+  onMarkerClick: (vehicle: VehicleDataItem) => void;  // The function from Index.tsx
   vehicleData: VehicleDataItem[];
 }
 
-export function VehicleLayer({ vehicleData }: VehicleLayerProps) {
+export function VehicleLayer({ vehicleData, onMarkerClick }: VehicleLayerProps) {
   return (
     <LayerGroup>
       {vehicleData.map((data) => (
@@ -33,6 +34,7 @@ export function VehicleLayer({ vehicleData }: VehicleLayerProps) {
           markerId={data.id}
           Position={data.pos}
           data={data.data}
+          onClick={() => onMarkerClick(data)}
         />
       ))}
     </LayerGroup>

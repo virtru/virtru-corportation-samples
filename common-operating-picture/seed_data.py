@@ -19,7 +19,7 @@ DB_USER = "postgres"
 DB_PASSWORD = "changeme"
 DB_HOST = "localhost"
 DB_PORT = 15432
-NUM_RECORDS = 50 # Number of records to insert
+NUM_RECORDS = 5 # Number of records to insert
 BATCH_SIZE = 10 # Number of records per batch
 
 # --- Fixed Data for TdfObjects ---

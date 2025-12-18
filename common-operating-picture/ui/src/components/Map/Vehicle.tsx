@@ -32,6 +32,7 @@ interface VehicleProps {
     attrNeedToKnow?: string[];
     attrRelTo?: string[];
   };
+      onClick: () => void;  // New onClick handler prop
 }
 
 interface RotatableIconProps {
@@ -166,7 +167,7 @@ const renderDetail = (Icon: React.ElementType, label: string, value: string | un
 );
 
 // --- VehicleMarker Component ---
-export function VehicleMarker({ markerId, Position, data }: VehicleProps) {
+export function VehicleMarker({ markerId, Position, data, onClick }: VehicleProps) {
   const [currentPos, setCurrentPos] = useState(Position);
   const [rotationAngle, setRotationAngle] = useState(0);
   const markerRef = useRef<L.Marker>(null);
@@ -227,7 +228,11 @@ export function VehicleMarker({ markerId, Position, data }: VehicleProps) {
   });
 
   return (
-    <Marker position={currentPos} ref={markerRef} icon={icon}>
+    <Marker position={currentPos} 
+    ref={markerRef} 
+    icon={icon}
+    eventHandlers={{ click: onClick }}  // Trigger the onClick callback when the marker is clicked
+    >
       <Tooltip direction="top" permanent={false} sticky className="custom-compact-tooltip"> 
         <Box className="tooltip-container">
           
