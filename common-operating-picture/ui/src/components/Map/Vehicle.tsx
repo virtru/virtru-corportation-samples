@@ -236,7 +236,6 @@ export function VehicleMarker({ markerId, Position, data, onClick }: VehicleProp
       <Tooltip direction="top" permanent={false} sticky className="custom-compact-tooltip"> 
         <Box className="tooltip-container">
           
-          {/* Header & Primary Identity */}
           <Box className="tooltip-header">
             <Typography variant="h6" component="div" className="vehicle-name">
               {data?.vehicleName || `Object ID: ${markerId.substring(0, 8)}...`}

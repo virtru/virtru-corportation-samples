@@ -29,7 +29,6 @@ export function TdfObjectsMapLayer({ tdfObjects = [] }: Props) {
   const groupedTDFObjects = groupTdfObjectsByDecryptedDataProperty(tdfObjects, groupLayersBy);
   const layersToRender = Object.keys(groupedTDFObjects);
 
-  // NOTE: LayersControl is not rendered here becuase it is the parent element for ALL layers
   // TODO: conditonally enable/disable clustering
   const clusterEnabled = false;
   if (clusterEnabled){

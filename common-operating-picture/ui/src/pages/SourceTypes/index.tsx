@@ -146,8 +146,6 @@ export function SourceTypes() {
         (obj: TdfObjectResponse) => obj.tdfObject.id === item.id
     );
 
-    // **REMOVED: setSelectedTdfObjectResponse(fullObjectResponse || null);**
-
     if (fullObjectResponse) {
 
       // Set the selected vehicle for the SearchResults list
@@ -188,8 +186,6 @@ export function SourceTypes() {
         .filter(o => o.tdfObject.geo) // Only include objects with geo data
         .map(o => {
           const geoJson = JSON.parse(o.tdfObject.geo);
-
-          // GeoJSON Point coordinates are [longitude, latitude]
           const [lng, lat] = geoJson.coordinates;
 
           return {
@@ -270,9 +266,9 @@ export function SourceTypes() {
   // Logic to determine what to show in SearchResults
   // Combine non-vehicle TDF objects with the single selected vehicle.
   const searchResultsTdfObjects: TdfObjectResponse[] = [
-    // 1. Start with the list of non-vehicle TDF objects
+    // List of non-vehicle TDF objects
     ...nonVehicleTdfObjects,
-    // 2. Append the vehicle selected by map-click (if one exists)
+    // Append the vehicle selected by map-click (if one exists)
     ...(selectedVehicleForResults ? [selectedVehicleForResults] : []),
   ];
   return (

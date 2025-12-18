@@ -372,6 +372,8 @@ VALUES (
       }
     }'
   )
+  -- TODO add information for vehicles above, should both allow vehicle level filtering &
+  -- control its display in the search results box (at least I think.)
   -- update columns on conflict
 
 ON CONFLICT (id) DO UPDATE SET
