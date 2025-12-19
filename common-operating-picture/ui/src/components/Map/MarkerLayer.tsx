@@ -38,11 +38,14 @@ export function MarkerLayer({ tdfObjects = [], isCluster = false, layerName = 'u
     }
 
     const value = propertyOf(o.decryptedData)(displayFields?.header || 'id');
+    const displayValue = (typeof value === 'object' && value !== null)
+      ? (value.country || value.name || "Object")
+      : value;
 
     return (
       <Stack direction="column" gap={0} spacing={0} mb={2}>
         <Typography variant="h6" sx={{ wordBreak: 'break-all' }}>
-          {getFieldTitle(displayFields?.header)}: {value}
+          {getFieldTitle(displayFields?.header)}: {displayValue}
         </Typography>
         <Typography variant="body1" sx={{ color: '#000' }}>
           {formattedDateTime}
@@ -55,7 +58,11 @@ export function MarkerLayer({ tdfObjects = [], isCluster = false, layerName = 'u
     const oa = propertyOf(o.decryptedData);
 
     const details = (displayFields?.details || []).map(field => {
-      const value = oa(field);
+      let value = oa(field);
+
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+      value = value.country || value.name || JSON.stringify(value);
+      }
 
       return (
         <Box key={`${o.tdfObject.id}-${field}-details`} sx={{ wordBreak: 'break-all' }}>
