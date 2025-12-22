@@ -84,8 +84,8 @@ func (b *CreateNoteObjectBatchResults) Close() error {
 }
 
 const createTdfObjects = `-- name: CreateTdfObjects :batchone
-INSERT INTO tdf_objects (ts, src_type, geo, search, tdf_blob, tdf_uri)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO tdf_objects (ts, src_type, geo, search, metadata, tdf_blob, tdf_uri)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING id
 `
 
@@ -96,18 +96,19 @@ type CreateTdfObjectsBatchResults struct {
 }
 
 type CreateTdfObjectsParams struct {
-	Ts      pgtype.Timestamp `json:"ts"`
-	SrcType string           `json:"src_type"`
-	Geo     *geos.Geom       `json:"geo"`
-	Search  []byte           `json:"search"`
-	TdfBlob []byte           `json:"tdf_blob"`
-	TdfUri  pgtype.Text      `json:"tdf_uri"`
+	Ts       pgtype.Timestamp `json:"ts"`
+	SrcType  string           `json:"src_type"`
+	Geo      *geos.Geom       `json:"geo"`
+	Search   []byte           `json:"search"`
+	Metadata []byte           `json:"metadata"`
+	TdfBlob  []byte           `json:"tdf_blob"`
+	TdfUri   pgtype.Text      `json:"tdf_uri"`
 }
 
 // CreateTdfObjects
 //
-//	INSERT INTO tdf_objects (ts, src_type, geo, search, tdf_blob, tdf_uri)
-//	VALUES ($1, $2, $3, $4, $5, $6)
+//	INSERT INTO tdf_objects (ts, src_type, geo, search, metadata, tdf_blob, tdf_uri)
+//	VALUES ($1, $2, $3, $4, $5, $6, $7)
 //	RETURNING id
 func (q *Queries) CreateTdfObjects(ctx context.Context, arg []CreateTdfObjectsParams) *CreateTdfObjectsBatchResults {
 	batch := &pgx.Batch{}
@@ -117,6 +118,7 @@ func (q *Queries) CreateTdfObjects(ctx context.Context, arg []CreateTdfObjectsPa
 			a.SrcType,
 			a.Geo,
 			a.Search,
+			a.Metadata,
 			a.TdfBlob,
 			a.TdfUri,
 		}

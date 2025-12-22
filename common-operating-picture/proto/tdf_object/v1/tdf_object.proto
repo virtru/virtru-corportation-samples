@@ -41,10 +41,12 @@ message TdfObject {
   string geo = 4;
   // plaintext json search index
   string search = 5;
+  // plaintext json metadata index
+  string metadata = 6;
   // tdf bytes
-  bytes tdf_blob = 6;
+  bytes tdf_blob = 7;
   // tdf data uri
-  string tdf_uri = 7;
+  string tdf_uri = 8;
 }
 
 message SrcTypeUiSchemaFieldConfig {
@@ -103,12 +105,14 @@ message CreateTdfObjectRequest {
   string geo = 2;
   // plaintext json search index
   string search = 3;
+  // plaintext json metadata index
+  string metadata = 4;
   // tdf bytes
-  bytes tdf_blob = 4;
+  bytes tdf_blob = 5;
   // tdf data uri
-  string tdf_uri = 5;
+  string tdf_uri = 6;
   // timestamp of data
-  google.protobuf.Timestamp ts = 6;
+  google.protobuf.Timestamp ts = 7;
 }
 
 message CreateTdfObjectResponse {
@@ -124,12 +128,14 @@ message UpdateTdfObjectRequest {
   google.protobuf.StringValue geo = 3;
   // plaintext json search index
   google.protobuf.StringValue search = 4;
+  // plaintext json metadata index
+  google.protobuf.StringValue metadata = 5;
   // tdf bytes
-  google.protobuf.BytesValue tdf_blob = 5;
+  google.protobuf.BytesValue tdf_blob = 6;
   // tdf data uri
-  google.protobuf.StringValue tdf_uri = 6;
+  google.protobuf.StringValue tdf_uri = 7;
   // timestamp of data
-  google.protobuf.Timestamp ts = 7;
+  google.protobuf.Timestamp ts = 8;
 }
 
 message UpdateTdfObjectResponse {
@@ -149,6 +155,7 @@ message QueryTdfObjectsRequest {
   string src_type = 2 [(buf.validate.field).required = true];
   string geo_location = 3;
   string search = 4;
+  string metadata = 5;
 }
 
 message QueryTdfObjectsResponse {

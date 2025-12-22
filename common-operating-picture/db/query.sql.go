@@ -16,14 +16,14 @@ import (
 const deleteTdfObject = `-- name: DeleteTdfObject :one
 DELETE FROM tdf_objects
 WHERE id = $1
-RETURNING id, ts, src_type, geo, search, tdf_blob, tdf_uri, _created_at, _created_by
+RETURNING id, ts, src_type, geo, search, metadata, tdf_blob, tdf_uri, _created_at, _created_by
 `
 
 // DeleteTdfObject
 //
 //	DELETE FROM tdf_objects
 //	WHERE id = $1
-//	RETURNING id, ts, src_type, geo, search, tdf_blob, tdf_uri, _created_at, _created_by
+//	RETURNING id, ts, src_type, geo, search, metadata, tdf_blob, tdf_uri, _created_at, _created_by
 func (q *Queries) DeleteTdfObject(ctx context.Context, id uuid.UUID) (TdfObject, error) {
 	row := q.db.QueryRow(ctx, deleteTdfObject, id)
 	var i TdfObject
@@ -33,6 +33,7 @@ func (q *Queries) DeleteTdfObject(ctx context.Context, id uuid.UUID) (TdfObject,
 		&i.SrcType,
 		&i.Geo,
 		&i.Search,
+		&i.Metadata,
 		&i.TdfBlob,
 		&i.TdfUri,
 		&i.CreatedAt,
@@ -146,7 +147,7 @@ func (q *Queries) GetSrcType(ctx context.Context, id string) (SrcType, error) {
 }
 
 const getTdfObject = `-- name: GetTdfObject :one
-SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, tdf_blob, tdf_uri
+SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, metadata, tdf_blob, tdf_uri
 FROM tdf_objects
 WHERE
   id = $1
@@ -154,18 +155,19 @@ LIMIT 1
 `
 
 type GetTdfObjectRow struct {
-	ID      uuid.UUID        `json:"id"`
-	Ts      pgtype.Timestamp `json:"ts"`
-	SrcType string           `json:"src_type"`
-	Geo     interface{}      `json:"geo"`
-	Search  []byte           `json:"search"`
-	TdfBlob []byte           `json:"tdf_blob"`
-	TdfUri  pgtype.Text      `json:"tdf_uri"`
+	ID       uuid.UUID        `json:"id"`
+	Ts       pgtype.Timestamp `json:"ts"`
+	SrcType  string           `json:"src_type"`
+	Geo      interface{}      `json:"geo"`
+	Search   []byte           `json:"search"`
+	Metadata []byte           `json:"metadata"`
+	TdfBlob  []byte           `json:"tdf_blob"`
+	TdfUri   pgtype.Text      `json:"tdf_uri"`
 }
 
 // GetTdfObject
 //
-//	SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, tdf_blob, tdf_uri
+//	SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, metadata, tdf_blob, tdf_uri
 //	FROM tdf_objects
 //	WHERE
 //	  id = $1
@@ -179,6 +181,7 @@ func (q *Queries) GetTdfObject(ctx context.Context, id uuid.UUID) (GetTdfObjectR
 		&i.SrcType,
 		&i.Geo,
 		&i.Search,
+		&i.Metadata,
 		&i.TdfBlob,
 		&i.TdfUri,
 	)
@@ -215,7 +218,7 @@ func (q *Queries) ListSrcTypes(ctx context.Context) ([]string, error) {
 }
 
 const listTdfObjects = `-- name: ListTdfObjects :many
-SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, tdf_blob, tdf_uri
+SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, metadata, tdf_blob, tdf_uri
 FROM tdf_objects
 WHERE src_type = $1::TEXT AND ts >= $2::TIMESTAMP AND ts <= $3::TIMESTAMP
 ORDER BY ts DESC
@@ -228,18 +231,19 @@ type ListTdfObjectsParams struct {
 }
 
 type ListTdfObjectsRow struct {
-	ID      uuid.UUID        `json:"id"`
-	Ts      pgtype.Timestamp `json:"ts"`
-	SrcType string           `json:"src_type"`
-	Geo     interface{}      `json:"geo"`
-	Search  []byte           `json:"search"`
-	TdfBlob []byte           `json:"tdf_blob"`
-	TdfUri  pgtype.Text      `json:"tdf_uri"`
+	ID       uuid.UUID        `json:"id"`
+	Ts       pgtype.Timestamp `json:"ts"`
+	SrcType  string           `json:"src_type"`
+	Geo      interface{}      `json:"geo"`
+	Search   []byte           `json:"search"`
+	Metadata []byte           `json:"metadata"`
+	TdfBlob  []byte           `json:"tdf_blob"`
+	TdfUri   pgtype.Text      `json:"tdf_uri"`
 }
 
 // ListTdfObjects
 //
-//	SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, tdf_blob, tdf_uri
+//	SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, metadata, tdf_blob, tdf_uri
 //	FROM tdf_objects
 //	WHERE src_type = $1::TEXT AND ts >= $2::TIMESTAMP AND ts <= $3::TIMESTAMP
 //	ORDER BY ts DESC
@@ -258,6 +262,7 @@ func (q *Queries) ListTdfObjects(ctx context.Context, arg ListTdfObjectsParams) 
 			&i.SrcType,
 			&i.Geo,
 			&i.Search,
+			&i.Metadata,
 			&i.TdfBlob,
 			&i.TdfUri,
 		); err != nil {
@@ -272,7 +277,7 @@ func (q *Queries) ListTdfObjects(ctx context.Context, arg ListTdfObjectsParams) 
 }
 
 const listTdfObjectsWithGeo = `-- name: ListTdfObjectsWithGeo :many
-SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, tdf_blob, tdf_uri
+SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, metadata, tdf_blob, tdf_uri
 FROM tdf_objects
 WHERE src_type = $1::TEXT AND ts >= $2::TIMESTAMP AND ts <= $3::TIMESTAMP
   AND ST_Within(geo, $4::GEOMETRY)
@@ -287,18 +292,19 @@ type ListTdfObjectsWithGeoParams struct {
 }
 
 type ListTdfObjectsWithGeoRow struct {
-	ID      uuid.UUID        `json:"id"`
-	Ts      pgtype.Timestamp `json:"ts"`
-	SrcType string           `json:"src_type"`
-	Geo     interface{}      `json:"geo"`
-	Search  []byte           `json:"search"`
-	TdfBlob []byte           `json:"tdf_blob"`
-	TdfUri  pgtype.Text      `json:"tdf_uri"`
+	ID       uuid.UUID        `json:"id"`
+	Ts       pgtype.Timestamp `json:"ts"`
+	SrcType  string           `json:"src_type"`
+	Geo      interface{}      `json:"geo"`
+	Search   []byte           `json:"search"`
+	Metadata []byte           `json:"metadata"`
+	TdfBlob  []byte           `json:"tdf_blob"`
+	TdfUri   pgtype.Text      `json:"tdf_uri"`
 }
 
 // ListTdfObjectsWithGeo
 //
-//	SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, tdf_blob, tdf_uri
+//	SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, metadata, tdf_blob, tdf_uri
 //	FROM tdf_objects
 //	WHERE src_type = $1::TEXT AND ts >= $2::TIMESTAMP AND ts <= $3::TIMESTAMP
 //	  AND ST_Within(geo, $4::GEOMETRY)
@@ -323,6 +329,74 @@ func (q *Queries) ListTdfObjectsWithGeo(ctx context.Context, arg ListTdfObjectsW
 			&i.SrcType,
 			&i.Geo,
 			&i.Search,
+			&i.Metadata,
+			&i.TdfBlob,
+			&i.TdfUri,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTdfObjectsWithMetadata = `-- name: ListTdfObjectsWithMetadata :many
+SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, metadata, tdf_blob, tdf_uri
+FROM tdf_objects
+WHERE src_type = $1::TEXT AND ts >= $2::TIMESTAMP AND ts <= $3::TIMESTAMP
+  AND metadata @> $4::JSONB
+ORDER BY ts DESC
+`
+
+type ListTdfObjectsWithMetadataParams struct {
+	SourceType string           `json:"source_type"`
+	StartTime  pgtype.Timestamp `json:"start_time"`
+	EndTime    pgtype.Timestamp `json:"end_time"`
+	Metadata   []byte           `json:"metadata"`
+}
+
+type ListTdfObjectsWithMetadataRow struct {
+	ID       uuid.UUID        `json:"id"`
+	Ts       pgtype.Timestamp `json:"ts"`
+	SrcType  string           `json:"src_type"`
+	Geo      interface{}      `json:"geo"`
+	Search   []byte           `json:"search"`
+	Metadata []byte           `json:"metadata"`
+	TdfBlob  []byte           `json:"tdf_blob"`
+	TdfUri   pgtype.Text      `json:"tdf_uri"`
+}
+
+// ListTdfObjectsWithMetadata
+//
+//	SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, metadata, tdf_blob, tdf_uri
+//	FROM tdf_objects
+//	WHERE src_type = $1::TEXT AND ts >= $2::TIMESTAMP AND ts <= $3::TIMESTAMP
+//	  AND metadata @> $4::JSONB
+//	ORDER BY ts DESC
+func (q *Queries) ListTdfObjectsWithMetadata(ctx context.Context, arg ListTdfObjectsWithMetadataParams) ([]ListTdfObjectsWithMetadataRow, error) {
+	rows, err := q.db.Query(ctx, listTdfObjectsWithMetadata,
+		arg.SourceType,
+		arg.StartTime,
+		arg.EndTime,
+		arg.Metadata,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListTdfObjectsWithMetadataRow
+	for rows.Next() {
+		var i ListTdfObjectsWithMetadataRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Ts,
+			&i.SrcType,
+			&i.Geo,
+			&i.Search,
+			&i.Metadata,
 			&i.TdfBlob,
 			&i.TdfUri,
 		); err != nil {
@@ -337,7 +411,7 @@ func (q *Queries) ListTdfObjectsWithGeo(ctx context.Context, arg ListTdfObjectsW
 }
 
 const listTdfObjectsWithSearch = `-- name: ListTdfObjectsWithSearch :many
-SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, tdf_blob, tdf_uri
+SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, metadata, tdf_blob, tdf_uri
 FROM tdf_objects
 WHERE src_type = $1::TEXT AND ts >= $2::TIMESTAMP AND ts <= $3::TIMESTAMP
   AND search @> $4::JSONB
@@ -352,18 +426,19 @@ type ListTdfObjectsWithSearchParams struct {
 }
 
 type ListTdfObjectsWithSearchRow struct {
-	ID      uuid.UUID        `json:"id"`
-	Ts      pgtype.Timestamp `json:"ts"`
-	SrcType string           `json:"src_type"`
-	Geo     interface{}      `json:"geo"`
-	Search  []byte           `json:"search"`
-	TdfBlob []byte           `json:"tdf_blob"`
-	TdfUri  pgtype.Text      `json:"tdf_uri"`
+	ID       uuid.UUID        `json:"id"`
+	Ts       pgtype.Timestamp `json:"ts"`
+	SrcType  string           `json:"src_type"`
+	Geo      interface{}      `json:"geo"`
+	Search   []byte           `json:"search"`
+	Metadata []byte           `json:"metadata"`
+	TdfBlob  []byte           `json:"tdf_blob"`
+	TdfUri   pgtype.Text      `json:"tdf_uri"`
 }
 
 // ListTdfObjectsWithSearch
 //
-//	SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, tdf_blob, tdf_uri
+//	SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, metadata, tdf_blob, tdf_uri
 //	FROM tdf_objects
 //	WHERE src_type = $1::TEXT AND ts >= $2::TIMESTAMP AND ts <= $3::TIMESTAMP
 //	  AND search @> $4::JSONB
@@ -388,6 +463,7 @@ func (q *Queries) ListTdfObjectsWithSearch(ctx context.Context, arg ListTdfObjec
 			&i.SrcType,
 			&i.Geo,
 			&i.Search,
+			&i.Metadata,
 			&i.TdfBlob,
 			&i.TdfUri,
 		); err != nil {
@@ -402,7 +478,7 @@ func (q *Queries) ListTdfObjectsWithSearch(ctx context.Context, arg ListTdfObjec
 }
 
 const listTdfObjectsWithSearchAndGeo = `-- name: ListTdfObjectsWithSearchAndGeo :many
-SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, tdf_blob, tdf_uri
+SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, metadata, tdf_blob, tdf_uri
 FROM tdf_objects
 WHERE src_type = $1::TEXT AND ts >= $2::TIMESTAMP AND ts <= $3::TIMESTAMP
   AND search @> $4::JSONB
@@ -419,18 +495,19 @@ type ListTdfObjectsWithSearchAndGeoParams struct {
 }
 
 type ListTdfObjectsWithSearchAndGeoRow struct {
-	ID      uuid.UUID        `json:"id"`
-	Ts      pgtype.Timestamp `json:"ts"`
-	SrcType string           `json:"src_type"`
-	Geo     interface{}      `json:"geo"`
-	Search  []byte           `json:"search"`
-	TdfBlob []byte           `json:"tdf_blob"`
-	TdfUri  pgtype.Text      `json:"tdf_uri"`
+	ID       uuid.UUID        `json:"id"`
+	Ts       pgtype.Timestamp `json:"ts"`
+	SrcType  string           `json:"src_type"`
+	Geo      interface{}      `json:"geo"`
+	Search   []byte           `json:"search"`
+	Metadata []byte           `json:"metadata"`
+	TdfBlob  []byte           `json:"tdf_blob"`
+	TdfUri   pgtype.Text      `json:"tdf_uri"`
 }
 
 // ListTdfObjectsWithSearchAndGeo
 //
-//	SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, tdf_blob, tdf_uri
+//	SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, metadata, tdf_blob, tdf_uri
 //	FROM tdf_objects
 //	WHERE src_type = $1::TEXT AND ts >= $2::TIMESTAMP AND ts <= $3::TIMESTAMP
 //	  AND search @> $4::JSONB
@@ -457,6 +534,7 @@ func (q *Queries) ListTdfObjectsWithSearchAndGeo(ctx context.Context, arg ListTd
 			&i.SrcType,
 			&i.Geo,
 			&i.Search,
+			&i.Metadata,
 			&i.TdfBlob,
 			&i.TdfUri,
 		); err != nil {
@@ -476,20 +554,22 @@ SET ts = COALESCE($2, ts),
     src_type = COALESCE($3, src_type),
     geo = COALESCE($4, geo),
     search = COALESCE($5, search),
-    tdf_blob = COALESCE($6, tdf_blob),
-    tdf_uri = COALESCE($7, tdf_uri)
+    metadata = COALESCE($6, metadata),
+    tdf_blob = COALESCE($7, tdf_blob),
+    tdf_uri = COALESCE($8, tdf_uri)
 WHERE id = $1
 RETURNING id, src_type, ts
 `
 
 type UpdateTdfObjectParams struct {
-	ID      uuid.UUID        `json:"id"`
-	Ts      pgtype.Timestamp `json:"ts"`
-	SrcType pgtype.Text      `json:"src_type"`
-	Geo     *geos.Geom       `json:"geo"`
-	Search  []byte           `json:"search"`
-	TdfBlob []byte           `json:"tdf_blob"`
-	TdfUri  pgtype.Text      `json:"tdf_uri"`
+	ID       uuid.UUID        `json:"id"`
+	Ts       pgtype.Timestamp `json:"ts"`
+	SrcType  pgtype.Text      `json:"src_type"`
+	Geo      *geos.Geom       `json:"geo"`
+	Search   []byte           `json:"search"`
+	Metadata []byte           `json:"metadata"`
+	TdfBlob  []byte           `json:"tdf_blob"`
+	TdfUri   pgtype.Text      `json:"tdf_uri"`
 }
 
 type UpdateTdfObjectRow struct {
@@ -505,8 +585,9 @@ type UpdateTdfObjectRow struct {
 //	    src_type = COALESCE($3, src_type),
 //	    geo = COALESCE($4, geo),
 //	    search = COALESCE($5, search),
-//	    tdf_blob = COALESCE($6, tdf_blob),
-//	    tdf_uri = COALESCE($7, tdf_uri)
+//	    metadata = COALESCE($6, metadata),
+//	    tdf_blob = COALESCE($7, tdf_blob),
+//	    tdf_uri = COALESCE($8, tdf_uri)
 //	WHERE id = $1
 //	RETURNING id, src_type, ts
 func (q *Queries) UpdateTdfObject(ctx context.Context, arg UpdateTdfObjectParams) (UpdateTdfObjectRow, error) {
@@ -516,6 +597,7 @@ func (q *Queries) UpdateTdfObject(ctx context.Context, arg UpdateTdfObjectParams
 		arg.SrcType,
 		arg.Geo,
 		arg.Search,
+		arg.Metadata,
 		arg.TdfBlob,
 		arg.TdfUri,
 	)

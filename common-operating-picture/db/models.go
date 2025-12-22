@@ -47,6 +47,8 @@ type TdfObject struct {
 	Geo *geos.Geom `json:"geo"`
 	// plaintext json search index
 	Search []byte `json:"search"`
+	// plaintext metadata json index
+	Metadata []byte `json:"metadata"`
 	// tdf data blob
 	TdfBlob []byte `json:"tdf_blob"`
 	// tdf data uri

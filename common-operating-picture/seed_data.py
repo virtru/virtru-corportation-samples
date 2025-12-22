@@ -16,7 +16,7 @@ DB_USER = "postgres"
 DB_PASSWORD = "changeme"
 DB_HOST = "localhost"
 DB_PORT = 15432
-NUM_RECORDS = 8
+NUM_RECORDS = 1
 BATCH_SIZE = 1
 
 # --- Fixed Data for TdfObjects ---
@@ -43,12 +43,13 @@ INSERT INTO tdf_objects (
     src_type,
     geo,
     search,
+    metadata,
     tdf_blob,
     tdf_uri,
     _created_at,
     _created_by
 )
-VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 """
 def get_sdk_instance(platform_endpoint, client_id, client_secret, ca_cert_path, issuer_endpoint):
     builder = SDKBuilder()
@@ -85,8 +86,8 @@ def encrypt_data(sdk, plaintext: str , attributes: list[str]) -> bytes:
 # Helper function to generate WKB for GEO data
 def generate_random_point_wkb():
     """Generates a random GEO in WKB format."""
-    min_lat, max_lat = -90, 90
-    min_lon, max_lon = -180, 180
+    min_lat, max_lat = 25, 45
+    min_lon, max_lon = -85, -65
 
     lat = random.uniform(min_lat, max_lat)
     lon = random.uniform(min_lon, max_lon)
@@ -123,7 +124,11 @@ def generate_tdf_records(count, sdk):
         search_jsonb = json.dumps({
             "attrRelTo": [],
             "attrNeedToKnow": [],
-            "attrClassification": [attr_url],
+            "attrClassification": [attr_url]
+        })
+
+        # Prepare metadata JSONB to have dynamic fields
+        metadata_jsonb = json.dumps({
             "speed": f"{random.randint(0, 900)} km/h",
             "altitude": f"{random.randint(0, 40000)} m",
             "heading": str(random.randint(0, 359))
@@ -142,6 +147,7 @@ def generate_tdf_records(count, sdk):
             FIXED_SRC_TYPE,
             random_geo,
             search_jsonb,
+            metadata_jsonb,
             tdf_blob,
             FIXED_TDF_URI,
             random_created_at,

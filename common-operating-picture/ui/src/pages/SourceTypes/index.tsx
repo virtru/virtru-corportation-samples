@@ -58,9 +58,9 @@ export function SourceTypes() {
 
   const { activeEntitlements } = useContext(BannerContext);
     // TDF object handling: TdObjectResponse[]
-  const { tdfObjects, setTdfObjects } = useContext(BannerContext) as { 
-      tdfObjects: TdfObjectResponse[]; 
-      setTdfObjects: Dispatch<SetStateAction<TdfObjectResponse[]>>; 
+  const { tdfObjects, setTdfObjects } = useContext(BannerContext) as {
+      tdfObjects: TdfObjectResponse[];
+      setTdfObjects: Dispatch<SetStateAction<TdfObjectResponse[]>>;
   };
 
   // NEW STATE: To hold the single vehicle added to the search results list on click
@@ -76,11 +76,11 @@ export function SourceTypes() {
 
     return vehicleData.filter(vehicle => {
       const classification = vehicle.data?.attrClassification;
-      if (!classification) return true; 
-      
+      if (!classification) return true;
+
       const classStr = Array.isArray(classification) ? classification[0] : classification;
       if (!classStr) return true;
-      
+
       return activeEntitlements.has(classStr);
     });
   }, [vehicleData, activeEntitlements]);
@@ -102,7 +102,7 @@ export function SourceTypes() {
         const response: TdfObjectResponse[] = await queryTdfObjects({
             srcType: id,
         });
-        setTdfObjects(response); 
+        setTdfObjects(response);
     } catch (error) {
         console.error('Error fetching TDF objects:', error);
         setTdfObjects([]);
@@ -153,13 +153,13 @@ export function SourceTypes() {
           setSelectedVehicleForResults(fullObjectResponse);
       } else {
           // If a non-vehicle marker is clicked, clear the vehicle selection
-          setSelectedVehicleForResults(null); 
+          setSelectedVehicleForResults(null);
       }
 
       handleFlyToClick(item.pos as LatLng);
     }
 
-  }, [tdfObjects, handleFlyToClick, vehicleSourceTypeId]); 
+  }, [tdfObjects, handleFlyToClick, vehicleSourceTypeId]);
   const fetchVehicles = useCallback(async (id: string) => {
     try {
       const tsRange = new TimestampSelector();
@@ -167,12 +167,12 @@ export function SourceTypes() {
       const dayjsStart = dayjs().subtract(24000, 'hour');
       tsRange.greaterOrEqualTo = Timestamp.fromDate(dayjsStart.toDate());
 
-   const response: TdfObjectResponse[] = await queryTdfObjects({        
+   const response: TdfObjectResponse[] = await queryTdfObjects({
     srcType: id,
         tsRange: tsRange,
       });
-      
-      setTdfObjects((prevTdfObjects: TdfObjectResponse[]) => { 
+
+      setTdfObjects((prevTdfObjects: TdfObjectResponse[]) => {
           // Filter out old vehicles from the previous list
           const nonVehicleObjects = prevTdfObjects.filter(
               obj => obj.tdfObject.srcType !== vehicleSourceTypeId
@@ -188,10 +188,22 @@ export function SourceTypes() {
           const geoJson = JSON.parse(o.tdfObject.geo);
           const [lng, lat] = geoJson.coordinates;
 
+          let metadata = {};
+          try {
+            metadata = typeof o.tdfObject.metadata === 'string'
+              ? JSON.parse(o.tdfObject.metadata)
+              : (o.tdfObject.metadata || {});
+          } catch (e) {
+            console.error("Failed to parse metadata", e);
+          }
+
           return {
-            id: o.tdfObject.id, 
+            id: o.tdfObject.id,
             pos: { lat, lng },
-            data: o.decryptedData, 
+            data: {
+              ...o.decryptedData,
+              ...metadata
+            }
           };
         });
 
@@ -218,7 +230,7 @@ export function SourceTypes() {
     }, REFRESH_INTERVAL_MS);
 
     return () => clearInterval(intervalId);
-  }, [fetchVehicles, vehicleSourceTypeId]); 
+  }, [fetchVehicles, vehicleSourceTypeId]);
 
 
   useEffect(() => {
@@ -230,9 +242,9 @@ export function SourceTypes() {
     setSelectable(select !== 'false');
 
     if (type !== srcTypeId) {
-        setSelectedVehicleForResults(null); 
+        setSelectedVehicleForResults(null);
     }
-    
+
     if (!type) {
       setSrcType(undefined);
       return;
@@ -241,7 +253,7 @@ export function SourceTypes() {
     if (type !== srcTypeId) {
       setTdfObjects((prevTdfObjects: TdfObjectResponse[]) => prevTdfObjects.filter(
         obj => obj.tdfObject.srcType === vehicleSourceTypeId
-      )); 
+      ));
 
       fetchSrcType(type);
 

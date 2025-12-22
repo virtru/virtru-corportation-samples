@@ -1,6 +1,6 @@
 -- name: CreateTdfObjects :batchone
-INSERT INTO tdf_objects (ts, src_type, geo, search, tdf_blob, tdf_uri)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO tdf_objects (ts, src_type, geo, search, metadata, tdf_blob, tdf_uri)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING id;
 
 -- name: UpdateTdfObject :one
@@ -9,6 +9,7 @@ SET ts = COALESCE(sqlc.narg('ts'), ts),
     src_type = COALESCE(sqlc.narg('src_type'), src_type),
     geo = COALESCE(sqlc.narg('geo'), geo),
     search = COALESCE(sqlc.narg('search'), search),
+    metadata = COALESCE(sqlc.narg('metadata'), metadata),
     tdf_blob = COALESCE(sqlc.narg('tdf_blob'), tdf_blob),
     tdf_uri = COALESCE(sqlc.narg('tdf_uri'), tdf_uri)
 WHERE id = $1
@@ -20,34 +21,41 @@ WHERE id = $1
 RETURNING *;
 
 -- name: GetTdfObject :one
-SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, tdf_blob, tdf_uri
+SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, metadata, tdf_blob, tdf_uri
 FROM tdf_objects
 WHERE
   id = $1
 LIMIT 1;
 
 -- name: ListTdfObjects :many
-SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, tdf_blob, tdf_uri
+SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, metadata, tdf_blob, tdf_uri
 FROM tdf_objects
 WHERE src_type = sqlc.arg('SourceType')::TEXT AND ts >= sqlc.arg('StartTime')::TIMESTAMP AND ts <= sqlc.arg('EndTime')::TIMESTAMP
 ORDER BY ts DESC;
 
 -- name: ListTdfObjectsWithGeo :many
-SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, tdf_blob, tdf_uri
+SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, metadata, tdf_blob, tdf_uri
 FROM tdf_objects
 WHERE src_type = sqlc.arg('SourceType')::TEXT AND ts >= sqlc.arg('StartTime')::TIMESTAMP AND ts <= sqlc.arg('EndTime')::TIMESTAMP
   AND ST_Within(geo, sqlc.arg('Geometry')::GEOMETRY)
 ORDER BY ts DESC;
 
 -- name: ListTdfObjectsWithSearch :many
-SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, tdf_blob, tdf_uri
+SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, metadata, tdf_blob, tdf_uri
 FROM tdf_objects
 WHERE src_type = sqlc.arg('SourceType')::TEXT AND ts >= sqlc.arg('StartTime')::TIMESTAMP AND ts <= sqlc.arg('EndTime')::TIMESTAMP
   AND search @> sqlc.arg('Search')::JSONB
 ORDER BY ts DESC;
 
+-- name: ListTdfObjectsWithMetadata :many
+SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, metadata, tdf_blob, tdf_uri
+FROM tdf_objects
+WHERE src_type = sqlc.arg('SourceType')::TEXT AND ts >= sqlc.arg('StartTime')::TIMESTAMP AND ts <= sqlc.arg('EndTime')::TIMESTAMP
+  AND metadata @> sqlc.arg('Metadata')::JSONB
+ORDER BY ts DESC;
+
 -- name: ListTdfObjectsWithSearchAndGeo :many
-SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, tdf_blob, tdf_uri
+SELECT id, ts, src_type, ST_Centroid(geo)::GEOMETRY AS geo, search, metadata, tdf_blob, tdf_uri
 FROM tdf_objects
 WHERE src_type = sqlc.arg('SourceType')::TEXT AND ts >= sqlc.arg('StartTime')::TIMESTAMP AND ts <= sqlc.arg('EndTime')::TIMESTAMP
   AND search @> sqlc.arg('Search')::JSONB

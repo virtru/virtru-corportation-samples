@@ -50,7 +50,7 @@ if os.path.exists(CREDS_FILE):
             # Check for API Client keys first
             CLIENT_ID = creds.get("clientId")
             CLIENT_SECRET = creds.get("clientSecret")
-            
+
             if CLIENT_ID and CLIENT_SECRET:
                 print(f"✅ Loaded API Client: {CLIENT_ID}")
             else:
@@ -91,7 +91,7 @@ async def get_valid_token(client):
     Refreshes it if it's expired or missing.
     """
     global ACCESS_TOKEN, TOKEN_EXPIRES_AT
-    
+
     # Buffer time (refresh 60s before expiry)
     if ACCESS_TOKEN and time.time() < (TOKEN_EXPIRES_AT - 60):
         return ACCESS_TOKEN
@@ -103,9 +103,9 @@ async def get_valid_token(client):
             "client_id": CLIENT_ID,
             "client_secret": CLIENT_SECRET
         }
-        
+
         response = await client.post(OPENSKY_AUTH_URL, data=payload)
-        
+
         if response.status_code == 200:
             data = response.json()
             ACCESS_TOKEN = data["access_token"]
@@ -116,7 +116,7 @@ async def get_valid_token(client):
         else:
             print(f"❌ Auth Failed {response.status_code}: {response.text}")
             return None
-            
+
     except Exception as e:
         print(f"❌ Auth Connection Error: {e}")
         return None
@@ -136,15 +136,15 @@ async def fetch_opensky_data(client, params):
 
     try:
         response = await client.get(
-            OPENSKY_API_URL, 
-            params=params, 
+            OPENSKY_API_URL,
+            params=params,
             headers=headers,
             timeout=10.0
         )
-        
+
         if response.status_code == 200:
             return response.json().get("states", [])
-        
+
         elif response.status_code == 429:
             print("⚠️  Rate Limited (429). Waiting 10s...")
             await asyncio.sleep(10)
@@ -167,22 +167,22 @@ async def initialize_flight_associations(client, uuids):
         return
 
     print("Fetching initial flights from OpenSky (Area Scan)...")
-    
+
     # 1. EXPENSIVE CALL: Only done once to find planes
     while True:
         states = await fetch_opensky_data(client, BOUNDING_BOX_PARAMS)
 
         if states:
             available_flights = [s[0] for s in states if s[5] is not None and s[6] is not None]
-            
+
             if available_flights:
                 break
             else:
                 print("API worked, but no flights found in box. Retrying in 5s...")
-        
+
         else:
             print("Retrying initialization in 5s...")
-        
+
         await asyncio.sleep(5)
 
     for i, uuid_obj in enumerate(uuids):
@@ -196,7 +196,7 @@ async def update_flight_data(client, conn_params):
         return
 
     tracked_ids = list(set(UUID_TO_FLIGHT.values()))
-    
+
     # 2. CHEAP CALL: Query ONLY the specific planes we are tracking
     # usage: ?icao24=abc&icao24=xyz
     target_params = {"icao24": tracked_ids}
@@ -209,7 +209,7 @@ async def update_flight_data(client, conn_params):
         return
 
     flight_data_map = {s[0]: s for s in states}
-    
+
     updates = []
 
     for uuid_obj, icao24 in UUID_TO_FLIGHT.items():
@@ -218,14 +218,14 @@ async def update_flight_data(client, conn_params):
         if flight:
             lng = flight[5]
             lat = flight[6]
-            
+
             if lat is not None and lng is not None:
                 geos_wkb = lat_lon_to_wkb(lat, lng)
-                
+
                 # --- HYBRID MODEL MAPPING ---
                 # Static Data (Callsign, Origin) -> LEFT in the Encrypted Blob (ignored here)
-                # Dynamic Data (Speed, Alt) -> PUT in the Plaintext Search Field
-                
+                # Dynamic Data (Speed, Alt) -> PUT in the Plaintext Metadata Field
+
                 velocity = flight[9] # m/s
                 altitude = flight[13] if flight[13] is not None else flight[7] # meters
                 heading = flight[10] # degrees
@@ -235,7 +235,7 @@ async def update_flight_data(client, conn_params):
                     "altitude": f"{round(altitude)} m" if altitude is not None else "N/A",
                     "heading": f"{round(heading)}" if heading is not None else "N/A"
                 })
-                
+
                 updates.append((geos_wkb, uuid_obj, metadata))
 
     if not updates:
@@ -247,12 +247,12 @@ async def update_flight_data(client, conn_params):
         conn = psycopg2.connect(**conn_params)
         cursor = conn.cursor()
 
-        # Update geo and MERGE new metadata into search JSONB
+        # Update geo and MERGE new metadata into metadata JSONB
         update_query = f"""
         UPDATE {TABLE_NAME} AS t
         SET
             geo = ST_SetSRID(ST_GeomFromWKB(src.wkb_geos), 4326),
-            search = t.search || src.metadata::jsonb
+            metadata = t.metadata || src.metadata::jsonb
         FROM
             (SELECT unnest(%s) as wkb_geos, unnest(%s) as entity_uuid, unnest(%s) as metadata) AS src
         WHERE
@@ -301,7 +301,7 @@ async def main():
 
                 elapsed = time.time() - start_time
                 wait_time = max(0, UPDATE_INTERVAL_SECONDS - elapsed)
-                
+
                 await asyncio.sleep(wait_time)
 
         except KeyboardInterrupt:

@@ -125,16 +125,23 @@ export class TdfObject extends Message<TdfObject> {
   search = "";
 
   /**
+   * plaintext json metadata index
+   *
+   * @generated from field: string metadata = 6;
+   */
+  metadata = "";
+
+  /**
    * tdf bytes
    *
-   * @generated from field: bytes tdf_blob = 6;
+   * @generated from field: bytes tdf_blob = 7;
    */
   tdfBlob = new Uint8Array(0);
 
   /**
    * tdf data uri
    *
-   * @generated from field: string tdf_uri = 7;
+   * @generated from field: string tdf_uri = 8;
    */
   tdfUri = "";
 
@@ -151,8 +158,9 @@ export class TdfObject extends Message<TdfObject> {
     { no: 3, name: "src_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "geo", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "search", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "tdf_blob", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
-    { no: 7, name: "tdf_uri", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "metadata", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "tdf_blob", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
+    { no: 8, name: "tdf_uri", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TdfObject {
@@ -596,23 +604,30 @@ export class CreateTdfObjectRequest extends Message<CreateTdfObjectRequest> {
   search = "";
 
   /**
+   * plaintext json metadata index
+   *
+   * @generated from field: string metadata = 4;
+   */
+  metadata = "";
+
+  /**
    * tdf bytes
    *
-   * @generated from field: bytes tdf_blob = 4;
+   * @generated from field: bytes tdf_blob = 5;
    */
   tdfBlob = new Uint8Array(0);
 
   /**
    * tdf data uri
    *
-   * @generated from field: string tdf_uri = 5;
+   * @generated from field: string tdf_uri = 6;
    */
   tdfUri = "";
 
   /**
    * timestamp of data
    *
-   * @generated from field: google.protobuf.Timestamp ts = 6;
+   * @generated from field: google.protobuf.Timestamp ts = 7;
    */
   ts?: Timestamp;
 
@@ -627,9 +642,10 @@ export class CreateTdfObjectRequest extends Message<CreateTdfObjectRequest> {
     { no: 1, name: "src_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "geo", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "search", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "tdf_blob", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
-    { no: 5, name: "tdf_uri", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "ts", kind: "message", T: Timestamp },
+    { no: 4, name: "metadata", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "tdf_blob", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
+    { no: 6, name: "tdf_uri", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "ts", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateTdfObjectRequest {
@@ -687,13 +703,12 @@ export class CreateTdfObjectResponse extends Message<CreateTdfObjectResponse> {
 }
 
 /**
+ * Uses wrappers to enable optional fields
+ *
  * @generated from message tdf_object.v1.UpdateTdfObjectRequest
  */
 export class UpdateTdfObjectRequest extends Message<UpdateTdfObjectRequest> {
   /**
-   * Used wrappers as they enable distinguishing between unset and empty values
-   * needed to manage any partial updates
-   *
    * @generated from field: string id = 1;
    */
   id = "";
@@ -720,23 +735,30 @@ export class UpdateTdfObjectRequest extends Message<UpdateTdfObjectRequest> {
   search?: string;
 
   /**
+   * plaintext json metadata index
+   *
+   * @generated from field: google.protobuf.StringValue metadata = 5;
+   */
+  metadata?: string;
+
+  /**
    * tdf bytes
    *
-   * @generated from field: google.protobuf.BytesValue tdf_blob = 5;
+   * @generated from field: google.protobuf.BytesValue tdf_blob = 6;
    */
   tdfBlob?: Uint8Array;
 
   /**
    * tdf data uri
    *
-   * @generated from field: google.protobuf.StringValue tdf_uri = 6;
+   * @generated from field: google.protobuf.StringValue tdf_uri = 7;
    */
   tdfUri?: string;
 
   /**
    * timestamp of data
    *
-   * @generated from field: google.protobuf.Timestamp ts = 7;
+   * @generated from field: google.protobuf.Timestamp ts = 8;
    */
   ts?: Timestamp;
 
@@ -752,9 +774,10 @@ export class UpdateTdfObjectRequest extends Message<UpdateTdfObjectRequest> {
     { no: 2, name: "src_type", kind: "message", T: StringValue },
     { no: 3, name: "geo", kind: "message", T: StringValue },
     { no: 4, name: "search", kind: "message", T: StringValue },
-    { no: 5, name: "tdf_blob", kind: "message", T: BytesValue },
-    { no: 6, name: "tdf_uri", kind: "message", T: StringValue },
-    { no: 7, name: "ts", kind: "message", T: Timestamp },
+    { no: 5, name: "metadata", kind: "message", T: StringValue },
+    { no: 6, name: "tdf_blob", kind: "message", T: BytesValue },
+    { no: 7, name: "tdf_uri", kind: "message", T: StringValue },
+    { no: 8, name: "ts", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateTdfObjectRequest {
@@ -909,6 +932,11 @@ export class QueryTdfObjectsRequest extends Message<QueryTdfObjectsRequest> {
    */
   search = "";
 
+  /**
+   * @generated from field: string metadata = 5;
+   */
+  metadata = "";
+
   constructor(data?: PartialMessage<QueryTdfObjectsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -921,6 +949,7 @@ export class QueryTdfObjectsRequest extends Message<QueryTdfObjectsRequest> {
     { no: 2, name: "src_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "geo_location", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "search", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "metadata", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): QueryTdfObjectsRequest {
