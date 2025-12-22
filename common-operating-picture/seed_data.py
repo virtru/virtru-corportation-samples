@@ -10,27 +10,17 @@ from psycopg2.extras import execute_batch
 from otdf_python.sdk_builder import SDKBuilder
 from otdf_python.config import NanoTDFConfig, KASInfo
 
-# Run attached requirements.txt to install dependencies.
-# pip install -r requirements.txt
-
 # --- DB Configs ---
 DB_NAME = "postgres"
 DB_USER = "postgres"
 DB_PASSWORD = "changeme"
 DB_HOST = "localhost"
 DB_PORT = 15432
-NUM_RECORDS = 5 # Number of records to insert
-BATCH_SIZE = 10 # Number of records per batch
+NUM_RECORDS = 8
+BATCH_SIZE = 1
 
 # --- Fixed Data for TdfObjects ---
 FIXED_SRC_TYPE = 'vehicles'
-FIXED_SEARCH_JSONB = json.dumps({
-    "attrRelTo": [],
-    "attrNeedToKnow": [],
-    "attrClassification": "https://demo.com/attr/classification/value/unclassified",
-})
-HEX_STRING_TDF_BLOB = ''
-FIXED_TDF_BLOB_BYTEA = bytes.fromhex(HEX_STRING_TDF_BLOB)
 FIXED_TDF_URI = None
 FIXED_CREATED_BY = 'seed_script'
 
@@ -39,23 +29,9 @@ PLATFORM_ENDPOINT = "https://local-dsp.virtru.com:8080"
 CLIENT_ID = "opentdf"
 CLIENT_SECRET = "secret"
 
-# Attributes
-ATTRIBUTES = [
-    "https://demo.com/attr/classification/value/unclassified"
-]
-
-# --- Vehicle Data Structure ---
-VEHICLE_DATA = {
-    "attrClassification": "https://demo.com/attr/classification/value/unclassified",
-    "attrNeedToKnow": [],
-    "attrRelTo": [],
-    "vehicleName": "UA-747",
-}
-PLAINTEXT_DATA = json.dumps(VEHICLE_DATA)
+CLASSIFICATIONS = ["unclassified", "confidential", "secret", "topsecret"]
 
 # --- DSP Configs ---
-OUTPUT_FILENAME = "encrypted_vehicle.tdf"
-
 CA_CERT_PATH = "./dsp-keys/rootCA.pem"
 ISSUER_ENDPOINT = "https://local-dsp.virtru.com:8443/auth/realms/opentdf"
 
@@ -74,11 +50,8 @@ INSERT INTO tdf_objects (
 )
 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
 """
-# Helper functions for tdfblob generation and encryption
-def get_sdk_instance(platform_endpoint: str, client_id: str, client_secret: str, ca_cert_path: str, issuer_endpoint: str):
-    """Initializes and returns the configured TDF SDK instance."""
+def get_sdk_instance(platform_endpoint, client_id, client_secret, ca_cert_path, issuer_endpoint):
     builder = SDKBuilder()
-    print(platform_endpoint)
     builder.set_platform_endpoint(platform_endpoint)
     builder.client_secret(client_id, client_secret)
     builder.cert_paths = ca_cert_path
@@ -89,7 +62,6 @@ def encrypt_data(sdk, plaintext: str , attributes: list[str]) -> bytes:
     """Encrypts a string payload using the TDF SDK."""
     #print(f"Creating TDF configuration with attributes: {attributes}")
     target_kas_url = "https://local-dsp.virtru.com:8080/kas"
-
     # Create the KASInfo object
     kas_info = KASInfo(url=target_kas_url)
 
@@ -110,8 +82,6 @@ def encrypt_data(sdk, plaintext: str , attributes: list[str]) -> bytes:
     )
 
     return output_stream.getvalue()
-
-
 # Helper function to generate WKB for GEO data
 def generate_random_point_wkb():
     """Generates a random GEO in WKB format."""
@@ -124,7 +94,7 @@ def generate_random_point_wkb():
     return f'POINT({lon} {lat})'
 
 # --- Make Records ---
-def generate_tdf_records(count, tdf_blob: bytes):
+def generate_tdf_records(count, sdk):
     """Generates a list of tdf_object records."""
     records = []
     fake = Faker()
@@ -132,7 +102,32 @@ def generate_tdf_records(count, tdf_blob: bytes):
     # Start date to be used for random timestamp generation
     start_date = datetime.now() - timedelta(days=30)
 
-    for _ in range(count):
+    for i in range(count):
+        # 1. Rotate Classifications (one of each)
+        cls_type = CLASSIFICATIONS[i % len(CLASSIFICATIONS)]
+        attr_url = f"https://demo.com/attr/classification/value/{cls_type}"
+
+        # 2. Randomize Vehicle Data
+        vehicle_data = {
+            "vehicleName": f"{fake.lexify('??').upper()}-{fake.numerify('###')}",
+            "callsign": fake.bothify('??-####').upper(),
+            "origin": fake.lexify('???').upper(),      # Changed from airport_iata to lexify
+            "destination": fake.lexify('???').upper(), # Changed from airport_iata to lexify
+            "aircraft_type": random.choice(["Boeing 747", "Airbus A320", "Cessna 172", "F-35", "Global 6000"])
+        }
+
+        # Encrypt with specific classification
+        tdf_blob = encrypt_data(sdk, json.dumps(vehicle_data), [attr_url])
+
+        # Prepare search JSONB to match classification
+        search_jsonb = json.dumps({
+            "attrRelTo": [],
+            "attrNeedToKnow": [],
+            "attrClassification": [attr_url],
+            "speed": f"{random.randint(0, 900)} km/h",
+            "altitude": f"{random.randint(0, 40000)} m",
+            "heading": str(random.randint(0, 359))
+        })
 
         # Randomized Data Fields
         random_id = str(uuid.uuid4())
@@ -146,7 +141,7 @@ def generate_tdf_records(count, tdf_blob: bytes):
             random_ts,
             FIXED_SRC_TYPE,
             random_geo,
-            FIXED_SEARCH_JSONB,
+            search_jsonb,
             tdf_blob,
             FIXED_TDF_URI,
             random_created_at,
@@ -201,28 +196,8 @@ def insert_seed_data(tdf_blob: bytes):
             conn.close()
 
 if __name__ == "__main__":
-    encrypted_result = None
     try:
-        # Initialize the SDK (Authentication happens here)
         sdk_instance = get_sdk_instance(PLATFORM_ENDPOINT, CLIENT_ID, CLIENT_SECRET, CA_CERT_PATH, ISSUER_ENDPOINT)
-
-        # --- Encryption ---
-        encrypted_result = encrypt_data(
-            sdk_instance,
-            PLAINTEXT_DATA,
-            ATTRIBUTES,
-        )
-
-
+        insert_seed_data(sdk_instance)
     except Exception as e:
-        print(f"\nAn error occurred: {e}")
-
-    if encrypted_result:
-        #print(f"KAS URL found in TDF: {encrypted_result[0:500].decode('utf-8', 'ignore')}")
-        tdf_blob = encrypted_result
-        # raw_hex_string = encrypted_result.hex()
-        insert_seed_data(tdf_blob)
-        #print(tdf_blob)
-        #print(tdf_blob.hex())
-    else:
-        print("Skipping database insertion because TDF encryption failed.")
+        print(f"An error occurred: {e}")
