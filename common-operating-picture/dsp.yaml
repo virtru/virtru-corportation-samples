@@ -8,7 +8,7 @@ taggingEndpoint: &taggingEndpoint localhost:9001
 mode: all # default mode is all
 
 logger:
-  level: debug
+  level: info
   type: text
   output: stdout
 # DB and Server configurations are defaulted for local development
@@ -213,7 +213,7 @@ server:
   cors:
     enabled: true
     # '*' to allow any origin or a specific domain like 'https://yourdomain.com'
-    allowedorigins: 
+    allowedorigins:
       - '*'
     # List of methods. Examples: 'GET,POST,PUT'
     allowedmethods:
@@ -230,6 +230,7 @@ server:
       - Content-Type
       - X-CSRF-Token
       - virtru-ntdf-version
+      - connect-protocol-version
     # List of response headers that browsers are allowed to access
     exposedheaders:
       - Link
