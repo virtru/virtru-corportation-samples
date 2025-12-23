@@ -1,4 +1,4 @@
-import { useEffect, useState, useContext, useCallback, useMemo, Dispatch, SetStateAction } from 'react';
+import { useEffect, useState, useContext, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { LayersControl, MapContainer, TileLayer } from 'react-leaflet';
 import { LatLng, Map } from 'leaflet';
@@ -11,7 +11,7 @@ import { CreateDialog } from './CreateDialog';
 import { SourceTypeSelector } from './SourceTypeSelector';
 import { SearchFilter } from './SearchFilter';
 import { SearchResults } from './SearchResults';
-import { SrcType, TdfObject } from '@/proto/tdf_object/v1/tdf_object_pb.ts';
+import { SrcType, TdfObject} from '@/proto/tdf_object/v1/tdf_object_pb.ts';
 import { config } from '@/config';
 import { TdfObjectsMapLayer } from '@/components/Map/TdfObjectsMapLayer';
 import { BannerContext } from '@/contexts/BannerContext';
@@ -20,28 +20,23 @@ import { TimestampSelector } from '@/proto/tdf_object/v1/tdf_object_pb.ts';
 import { Timestamp } from '@bufbuild/protobuf';
 import dayjs from 'dayjs';
 
-// Define TdfObjectResponse structure
-export interface TdfObjectResponse {
-    tdfObject: TdfObject;
-    decryptedData: any; // Use a more specific type if known
-}
-
 export interface VehicleDataItem {
   id: string;
   pos: { lat: number; lng: number };
-  data? : {
-    vehicleName: string;
+  rawObject: TdfObject;
+  data?: {
+    vehicleName?: string | undefined;
     callsign?: string;
     origin?: string;
     destination?: string;
     speed?: string;
     altitude?: string;
+    heading?: string;
     aircraft_type?: string;
-
     attrClassification?: string | string[];
     attrNeedToKnow?: string[];
     attrRelTo?: string[];
-    }
+  };
   }
 
 export function SourceTypes() {
@@ -53,18 +48,11 @@ export function SourceTypes() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const { getSrcType, queryTdfObjects } = useRpcClient();
+  const { getSrcType } = useRpcClient();
   const [srcType, setSrcType] = useState<SrcType>();
 
-  const { activeEntitlements } = useContext(BannerContext);
-    // TDF object handling: TdObjectResponse[]
-  const { tdfObjects, setTdfObjects } = useContext(BannerContext) as {
-      tdfObjects: TdfObjectResponse[];
-      setTdfObjects: Dispatch<SetStateAction<TdfObjectResponse[]>>;
-  };
-
-  // NEW STATE: To hold the single vehicle added to the search results list on click
-  const [selectedVehicleForResults, setSelectedVehicleForResults] = useState<TdfObjectResponse | null>(null);
+  const { tdfObjects, setTdfObjects, activeEntitlements } = useContext(BannerContext);
+  const { queryTdfObjectsLight } = useRpcClient();
 
   const [vehicleData, setVehicleData] = useState<VehicleDataItem[]>([]);
   const vehicleSourceTypeId = "vehicles";
@@ -96,19 +84,6 @@ export function SourceTypes() {
     }
   }, [getSrcType, setSearchParams]);
 
-  const fetchTdfObjects = useCallback(async (id: string) => {
-    try {
-        console.log(`Fetching TDF objects for source type: ${id}`);
-        const response: TdfObjectResponse[] = await queryTdfObjects({
-            srcType: id,
-        });
-        setTdfObjects(response);
-    } catch (error) {
-        console.error('Error fetching TDF objects:', error);
-        setTdfObjects([]);
-    }
-  }, [queryTdfObjects, setTdfObjects]);
-
   const handleSrcTypeIdChange = useCallback((id: string) => {
     const newSearchParams = new URLSearchParams(searchParams);
     newSearchParams.set('type', id);
@@ -139,27 +114,10 @@ export function SourceTypes() {
     map.flyTo({ lat, lng }, map.getZoom());
   }, [map]);
 
-  const handleMarkerClick = useCallback((item: VehicleDataItem) => {
+  const handleVehicleClick = useCallback((vehicle: VehicleDataItem) => {
+  console.log("Selected vehicle:", vehicle);
+  }, []);
 
-    // Find the full TdfObjectResponse object using the item ID.
-    const fullObjectResponse = tdfObjects.find(
-        (obj: TdfObjectResponse) => obj.tdfObject.id === item.id
-    );
-
-    if (fullObjectResponse) {
-
-      // Set the selected vehicle for the SearchResults list
-      if (fullObjectResponse.tdfObject.srcType === vehicleSourceTypeId) {
-          setSelectedVehicleForResults(fullObjectResponse);
-      } else {
-          // If a non-vehicle marker is clicked, clear the vehicle selection
-          setSelectedVehicleForResults(null);
-      }
-
-      handleFlyToClick(item.pos as LatLng);
-    }
-
-  }, [tdfObjects, handleFlyToClick, vehicleSourceTypeId]);
   const fetchVehicles = useCallback(async (id: string) => {
     try {
       const tsRange = new TimestampSelector();
@@ -167,43 +125,35 @@ export function SourceTypes() {
       const dayjsStart = dayjs().subtract(24000, 'hour');
       tsRange.greaterOrEqualTo = Timestamp.fromDate(dayjsStart.toDate());
 
-   const response: TdfObjectResponse[] = await queryTdfObjects({
-    srcType: id,
+      const response = await queryTdfObjectsLight({
+        srcType: id,
         tsRange: tsRange,
-      });
-
-      setTdfObjects((prevTdfObjects: TdfObjectResponse[]) => {
-          // Filter out old vehicles from the previous list
-          const nonVehicleObjects = prevTdfObjects.filter(
-              obj => obj.tdfObject.srcType !== vehicleSourceTypeId
-          );
-          // Return the old non-vehicle objects merged with the newly fetched vehicles
-          return [...nonVehicleObjects, ...response];
       });
 
       // Transform the TdfObjectResponse into VehicleDataItem[]
       const vehicleData: VehicleDataItem[] = response
-        .filter(o => o.tdfObject.geo) // Only include objects with geo data
+        .filter(o => o.geo) // Only include objects with geo data
         .map(o => {
-          const geoJson = JSON.parse(o.tdfObject.geo);
+          const geoJson = JSON.parse(o.geo);
+
+          // GeoJSON Point coordinates are [longitude, latitude]
           const [lng, lat] = geoJson.coordinates;
 
-          let metadata = {};
+          let telemetry = {};
           try {
-            metadata = typeof o.tdfObject.metadata === 'string'
-              ? JSON.parse(o.tdfObject.metadata)
-              : (o.tdfObject.metadata || {});
+            if (o.metadata && o.metadata !== "null") {
+              telemetry = JSON.parse(o.metadata);
+            }
           } catch (e) {
-            console.error("Failed to parse metadata", e);
+            console.error("Metadata parse error", e);
           }
 
           return {
-            id: o.tdfObject.id,
+            id: o.id, // Use the TDF object ID as the marker ID
+            // Convert to { lat: number, lng: number }
             pos: { lat, lng },
-            data: {
-              ...o.decryptedData,
-              ...metadata
-            }
+            rawObject: o,
+            data: { ...telemetry },
           };
         });
 
@@ -212,7 +162,7 @@ export function SourceTypes() {
       console.error('Error fetching vehicles:', error);
       setVehicleData([]);
     }
-  }, [queryTdfObjects]);
+  }, [queryTdfObjectsLight]);
 
   // New useEffect to fetch the data on component mount
   useEffect(() => {
@@ -230,7 +180,7 @@ export function SourceTypes() {
     }, REFRESH_INTERVAL_MS);
 
     return () => clearInterval(intervalId);
-  }, [fetchVehicles, vehicleSourceTypeId]);
+  }, []);
 
 
   useEffect(() => {
@@ -241,48 +191,25 @@ export function SourceTypes() {
     setSrcTypeId(type);
     setSelectable(select !== 'false');
 
-    if (type !== srcTypeId) {
-        setSelectedVehicleForResults(null);
-    }
-
     if (!type) {
       setSrcType(undefined);
       return;
     }
 
     if (type !== srcTypeId) {
-      setTdfObjects((prevTdfObjects: TdfObjectResponse[]) => prevTdfObjects.filter(
-        obj => obj.tdfObject.srcType === vehicleSourceTypeId
-      ));
-
+      setTdfObjects([]);
       fetchSrcType(type);
-
-      // Fetch TDF objects for the newly selected type (if it's not the vehicle type)
-      if (type !== vehicleSourceTypeId) {
-        fetchTdfObjects(type);
-      }
     }
 
     if (mode === 'create') {
       setDialogOpen(true);
     }
-    }, [searchParams, fetchSrcType, srcTypeId, setTdfObjects, fetchTdfObjects, vehicleSourceTypeId]);
+  }, [searchParams, fetchSrcType, srcTypeId, setTdfObjects]);
 
+  const searchResultsTdfObjects = srcTypeId === vehicleSourceTypeId
+  ? [] // If the selected type is 'vehicles', show an empty list in SearchResults.
+  : tdfObjects; // Otherwise, show the actual tdfObjects (from BannerContext).
 
-  // Filter out vehicle objects from the main tdfObjects list for the generic map layer
-  const nonVehicleTdfObjects: TdfObjectResponse[] = tdfObjects.filter(
-      (obj) => obj.tdfObject.srcType !== vehicleSourceTypeId
-  );
-
-
-  // Logic to determine what to show in SearchResults
-  // Combine non-vehicle TDF objects with the single selected vehicle.
-  const searchResultsTdfObjects: TdfObjectResponse[] = [
-    // List of non-vehicle TDF objects
-    ...nonVehicleTdfObjects,
-    // Append the vehicle selected by map-click (if one exists)
-    ...(selectedVehicleForResults ? [selectedVehicleForResults] : []),
-  ];
   return (
     <>
       <PageTitle
@@ -297,12 +224,14 @@ export function SourceTypes() {
                       {filteredVehicleData.length > 0 && (
                     <LayersControl.Overlay name="Planes" checked>
                       {/* Vehicle Layer - key forces re-render when entitlements change */}
-                      <VehicleLayer vehicleData={vehicleData} onMarkerClick={handleMarkerClick} />                    </LayersControl.Overlay>
+                      <VehicleLayer key={`vehicles-${activeEntitlements.size}`} vehicleData={filteredVehicleData} onMarkerClick={handleVehicleClick}/>
+                    </LayersControl.Overlay>
                     )}
                       {/* TDF Object Layer */}
                       {tdfObjects.length > 0 && (
                     <LayersControl.Overlay name="TDF Objects" checked>
-                      <TdfObjectsMapLayer tdfObjects={nonVehicleTdfObjects} />                    </LayersControl.Overlay>
+                        <TdfObjectsMapLayer tdfObjects={tdfObjects} />
+                    </LayersControl.Overlay>
                     )}
                 </LayersControl>
             </MapContainer>

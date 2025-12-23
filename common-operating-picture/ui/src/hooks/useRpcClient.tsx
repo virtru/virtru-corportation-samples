@@ -4,6 +4,8 @@ import { PartialMessage } from '@bufbuild/protobuf';
 import { crpcClient, drpcClient } from '@/api/connectRpcClient';
 import { useTDF } from './useTdf';
 import { useAuth } from './useAuth';
+import DecryptWorker from '@/workers/decrypt.worker.ts?worker';
+import { config } from '@/config'
 
 export type TdfObjectResponse = {
   tdfObject: TdfObject;
@@ -14,61 +16,131 @@ export type TdfNotesResponse = {
   decryptedData: any;
 }
 
+// Web Worker Pool for Decryption
+const WORKER_POOL_SIZE = 4;
+const workerPool: Worker[] = [];
+let nextWorkerIndex = 0;
+let workersInitialized = false;
+
+function getWorker(): Worker {
+  if (workerPool.length < WORKER_POOL_SIZE) {
+    const newWorker = new DecryptWorker();
+    workerPool.push(newWorker);
+    return newWorker;
+  }
+  const worker = workerPool[nextWorkerIndex];
+  nextWorkerIndex = (nextWorkerIndex + 1) % WORKER_POOL_SIZE;
+  return worker;
+}
+
+async function initializeWorkers(user: ReturnType<typeof useAuth>['user']) {
+  if (workersInitialized || !user?.refreshToken || !user?.accessToken) return;
+
+  const initData = {
+    config,
+    user: { refreshToken: user.refreshToken, accessToken: user.accessToken },
+  };
+
+  const workerPromises = Array.from({ length: WORKER_POOL_SIZE }).map((_) => {
+    const worker = getWorker();
+    return new Promise<void>((resolve) => {
+      const handleMessage = (event: MessageEvent) => {
+        if (event.data.type === 'init-complete') {
+          worker.removeEventListener('message', handleMessage);
+          resolve();
+        }
+      };
+      worker.addEventListener('message', handleMessage);
+      worker.postMessage(initData);
+    });
+  });
+
+  await Promise.all(workerPromises);
+  workersInitialized = true;
+  console.log(`Initialized ${WORKER_POOL_SIZE} decryption workers.`);
+}
+
 const tdfObjectCache = new Map<string, any>();
 
 export function useRpcClient() {
   const { decrypt } = useTDF();
   const { user } = useAuth();
 
+  if (!workersInitialized && user) {
+    initializeWorkers(user);
+  }
+
   function clearTdfObjectCache() {
     tdfObjectCache.clear();
     console.log("TDF Object Cache cleared.");
   }
 
-  // Modified to merge Dynamic (Plaintext) and Static (Encrypted) data
   async function transformTdfObject(tdfObject: TdfObject): Promise<TdfObjectResponse> {
     const objectId = tdfObject.id;
 
-    // 1. Extract Dynamic Data from Plaintext Search Field
-    // This comes from sim_data3.py (Speed, Altitude, Heading)
+    // Extract Dynamic Data (Plaintext Search Field)
+    // This contains live telemetry (Speed, Alt, Heading)
     let dynamicData = {};
     try {
-      if (tdfObject.search && tdfObject.search !== "null") {
-        dynamicData = JSON.parse(tdfObject.search);
+      if (tdfObject.metadata && tdfObject.metadata !== "null") {
+        dynamicData = JSON.parse(tdfObject.metadata);
       }
     } catch (e) {
       console.warn("Failed to parse dynamic metadata", e);
     }
 
-
-    let staticData = {};
-    
-    // Check Cache first
+    // Handle Static/Encrypted Data
+    // Check Cache first for identity data (Name, Callsign)
     if (tdfObjectCache.has(objectId)) {
-      staticData = tdfObjectCache.get(objectId);
-    } 
-    // If not in cache, decrypt the blob
-    else if (tdfObject.tdfBlob && tdfObject.tdfBlob.length > 0) {
-      try {
-        const decryptedPayload = await decrypt(tdfObject.tdfBlob.buffer);
-        staticData = JSON.parse(decryptedPayload);
-
-        // Cache the static identity data so we don't re-decrypt every frame
-        if (tdfObject.srcType === 'vehicles') {
-          tdfObjectCache.set(objectId, staticData);
-        }
-      } catch (err) {
-        console.error('Error decrypting static data:', err);
-      }
+      return {
+        tdfObject,
+        decryptedData: { ...tdfObjectCache.get(objectId), ...dynamicData },
+      };
     }
 
-    // 3. Merge them into one object for the UI
-    const mergedData = { ...staticData, ...dynamicData };
+    // Fallback if workers aren't ready
+    if (!workersInitialized || !tdfObject.tdfBlob || tdfObject.tdfBlob.length === 0) {
+      return { tdfObject, decryptedData: dynamicData };
+    }
 
-    return {
-      tdfObject,
-      decryptedData: mergedData, 
-    };
+    // Decrypt via Worker Pool
+    const worker = getWorker();
+
+    return new Promise((resolve) => {
+      const handleMessage = (event: MessageEvent) => {
+        if (event.data.type !== 'decryption-result') return;
+        worker.removeEventListener('message', handleMessage);
+
+        const { decryptedPayload, error } = event.data;
+        let staticData = {};
+
+        if (decryptedPayload) {
+          try {
+            staticData = JSON.parse(decryptedPayload);
+            // Cache identity data only (not the changing dynamic telemetry)
+            if (tdfObject.srcType === 'vehicles') {
+              tdfObjectCache.set(objectId, staticData);
+            }
+          } catch (e) {
+            console.error("JSON parse failed on worker result:", e);
+          }
+        }
+
+        if (error) console.error(`Decryption failed for ${objectId}:`, error);
+
+        // Final Merge: Static (from Worker) + Dynamic (from Search Field)
+        resolve({
+          tdfObject,
+          decryptedData: { ...staticData, ...dynamicData },
+        });
+      };
+
+      worker.addEventListener('message', handleMessage);
+
+      // Transfer ownership of the buffer to the worker for performance
+      const tdfBlobBuffer = tdfObject.tdfBlob!.buffer.slice(0);
+      worker.postMessage({ tdfBlobBuffer }, [tdfBlobBuffer]);
+    });
   }
 
   async function transformNoteObject(tdfNote: TdfNote): Promise<TdfNotesResponse | null> {
@@ -97,6 +169,11 @@ export function useRpcClient() {
     return tdfObjectResponses.filter((tdfObjectResponse: TdfObjectResponse | null): tdfObjectResponse is TdfObjectResponse => tdfObjectResponse !== null);
   }
 
+  async function queryTdfObjectsLight(request: PartialMessage<QueryTdfObjectsRequest>): Promise<TdfObject[]> {
+    const response = await crpcClient.queryTdfObjects(request, { headers: { 'Authorization': user?.accessToken || '' }});
+    return response.tdfObjects;
+  }
+
   async function updateTdfObject(request: PartialMessage<UpdateTdfObjectRequest>): Promise<UpdateTdfObjectResponse> {
     const response = await crpcClient.updateTdfObject(request, { headers: { 'Authorization': user?.accessToken || '' } });
     return response;
@@ -117,6 +194,8 @@ export function useRpcClient() {
     createNoteObject: drpcClient.createTdfNote,
     updateTdfObject,
     queryTdfObjects,
+    queryTdfObjectsLight,
+    transformTdfObject,
     createTdfObject: crpcClient.createTdfObject,
     clearTdfObjectCache,
     getSrcType: crpcClient.getSrcType,

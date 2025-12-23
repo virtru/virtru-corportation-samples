@@ -16,7 +16,7 @@ DB_USER = "postgres"
 DB_PASSWORD = "changeme"
 DB_HOST = "localhost"
 DB_PORT = 15432
-NUM_RECORDS = 1
+NUM_RECORDS = 8
 BATCH_SIZE = 1
 
 # --- Fixed Data for TdfObjects ---

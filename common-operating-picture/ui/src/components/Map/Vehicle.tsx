@@ -1,13 +1,15 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { Marker, Tooltip } from "react-leaflet";
 import L from "leaflet";
-import { Typography, Box, CircularProgress } from "@mui/material"; 
+import { Typography, Box, CircularProgress } from "@mui/material";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import AltRouteIcon from "@mui/icons-material/AltRoute";
 import MyLocationIcon from "@mui/icons-material/MyLocation";
 import GpsFixedIcon from "@mui/icons-material/GpsFixed";
-import FlightIcon from '@mui/icons-material/Flight'; 
+import FlightIcon from '@mui/icons-material/Flight';
 import { mapStringToColor } from "@/pages/SourceTypes/helpers/markers";
+import { useRpcClient } from '@/hooks/useRpcClient';
+import { TdfObject } from '@/proto/tdf_object/v1/tdf_object_pb';
 
 // --- Interfaces (Standard) ---
 interface Coordinate {
@@ -18,8 +20,9 @@ interface Coordinate {
 interface VehicleProps {
   markerId: string;
   Position: Coordinate;
+  rawObject: TdfObject;
   data?: {
-    vehicleName: string;
+    vehicleName?: string | undefined;
     callsign?: string;
     origin?: string;
     destination?: string;
@@ -63,16 +66,16 @@ function calculateBearing(start: Coordinate, end: Coordinate): number {
 
 const RotatableIcon = ({ rotationAngle, color, iconSize, iconAnchor }: RotatableIconProps) => {
   const [width, height] = Array.isArray(iconSize) ? iconSize : ([20, 20] as [number, number]);
-  
+
   // SVG plane icon that can be colored
   const planeSvg = `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${width}" height="${height}" style="transform: rotate(${rotationAngle}deg);">
       <path fill="${color}" d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
     </svg>
   `;
-  
+
   const encodedSvg = encodeURIComponent(planeSvg);
-  
+
   return useMemo(
     () =>
       L.divIcon({
@@ -103,9 +106,9 @@ const getClassificationColor = (classification?: string | string[]): string => {
 // --- Speed Gauge Component ---
 const MAX_SPEED_KMH = 1000;
 const SpeedGauge = ({ speedString }: { speedString: string | undefined }) => {
-  const [value, unit] = speedString?.trim().split(' ') || ['0', 'km/h']; 
+  const [value, unit] = speedString?.trim().split(' ') || ['0', 'km/h'];
   const speed = parseInt(value, 10);
-  
+
   if (isNaN(speed)) {
     return (
       <Box className="speed-gauge-na">
@@ -119,17 +122,17 @@ const SpeedGauge = ({ speedString }: { speedString: string | undefined }) => {
 
   return (
     <Box className="speed-gauge-container">
-      <CircularProgress 
-        variant="determinate" 
-        value={100} 
+      <CircularProgress
+        variant="determinate"
+        value={100}
         size={60}
         thickness={4}
         className="speed-gauge-bg"
         sx={{ color: 'rgba(0, 0, 0, 0.2) !important' }}
       />
-      <CircularProgress 
-        variant="determinate" 
-        value={progress} 
+      <CircularProgress
+        variant="determinate"
+        value={progress}
         size={60}
         thickness={4}
         className={`speed-gauge-progress ${colorClass}`}
@@ -149,13 +152,13 @@ const SpeedGauge = ({ speedString }: { speedString: string | undefined }) => {
 // --- Detail Renderer ---
 const renderDetail = (Icon: React.ElementType, label: string, value: string | undefined) => (
   <Box className="detail-item">
-    <Icon 
-      fontSize="small" 
-      className="detail-icon" 
-      sx={{ 
+    <Icon
+      fontSize="small"
+      className="detail-icon"
+      sx={{
         color: '#000 !important',
         fill: '#000 !important'
-      }} 
+      }}
     />
     <Typography variant="caption" className="detail-label">
       {label}
@@ -167,12 +170,22 @@ const renderDetail = (Icon: React.ElementType, label: string, value: string | un
 );
 
 // --- VehicleMarker Component ---
-export function VehicleMarker({ markerId, Position, data, onClick }: VehicleProps) {
+export function VehicleMarker({ markerId, Position, data, rawObject, onClick }: VehicleProps) {
+  const { transformTdfObject } = useRpcClient();
+  const [isLoading, setIsLoading] = useState(false);
+  const [decryptedData, setDecryptedData] = useState<any>(null); // State for decrypted results
   const [currentPos, setCurrentPos] = useState(Position);
   const [rotationAngle, setRotationAngle] = useState(0);
   const markerRef = useRef<L.Marker>(null);
 
+  // Combine static data with decrypted data (decrypted takes priority)
+  const displayData = useMemo(() => ({
+    ...data,
+    ...decryptedData
+  }), [data, decryptedData]);
+
   useEffect(() => {
+    // ... (Your existing animation logic remains identical) ...
     const startPos = currentPos;
     const targetPos = Position;
     const duration = 3000;
@@ -185,10 +198,7 @@ export function VehicleMarker({ markerId, Position, data, onClick }: VehicleProp
     if (lngDelta > 180) lngDelta -= 360;
     else if (lngDelta < -180) lngDelta += 360;
 
-    if (
-      Math.abs(lngDelta) > 100 ||
-      Math.abs(targetPos.lat - startPos.lat) > 100
-    ) {
+    if (Math.abs(lngDelta) > 100 || Math.abs(targetPos.lat - startPos.lat) > 100) {
       markerRef.current?.setLatLng(targetPos);
       setCurrentPos(targetPos);
       return;
@@ -196,90 +206,96 @@ export function VehicleMarker({ markerId, Position, data, onClick }: VehicleProp
 
     const startTime = Date.now();
     let frameId: number;
-
     const animate = () => {
       const now = Date.now();
       const progress = Math.min(1, (now - startTime) / duration);
-
       const newLat = startPos.lat + (targetPos.lat - startPos.lat) * progress;
       let newLng = startPos.lng + lngDelta * progress;
-
       newLng = ((newLng + 180) % 360) - 180;
       if (newLng <= -180) newLng += 360;
 
       markerRef.current?.setLatLng({ lat: newLat, lng: newLng });
       setCurrentPos({ lat: newLat, lng: newLng });
-
-      if (progress < 1) {
-        frameId = requestAnimationFrame(animate);
-      }
+      if (progress < 1) frameId = requestAnimationFrame(animate);
     };
-        // Start the animation
     frameId = requestAnimationFrame(animate);
-            // Cleanup
     return () => cancelAnimationFrame(frameId);
   }, [Position]);
 
+  // Decryption handler
+  const handleMarkerClick = async () => {
+    // Call external onClick if provided
+    if (onClick) onClick();
+
+    // Trigger decryption if not already loaded
+    if (decryptedData || isLoading) return;
+
+    setIsLoading(true);
+    try {
+      const result = await transformTdfObject(rawObject);
+      setDecryptedData(result.decryptedData);
+    } catch (err) {
+      console.error("Decryption failed", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const icon = RotatableIcon({
     rotationAngle,
-    color: getClassificationColor(data?.attrClassification),
+    color: getClassificationColor(displayData?.attrClassification),
     iconSize: ICON_PROPS.size,
     iconAnchor: ICON_PROPS.anchor,
   });
 
   return (
-    <Marker position={currentPos} 
-    ref={markerRef} 
-    icon={icon}
-    eventHandlers={{ click: onClick }}  // Trigger the onClick callback when the marker is clicked
+    <Marker
+      position={currentPos}
+      ref={markerRef}
+      icon={icon}
+      eventHandlers={{ click: handleMarkerClick }}
     >
-      <Tooltip direction="top" permanent={false} sticky className="custom-compact-tooltip"> 
-        <Box className="tooltip-container">
-          
+      <Tooltip direction="top" permanent={false} sticky className="custom-compact-tooltip">
+        <Box className="tooltip-container" sx={{ opacity: isLoading ? 0.6 : 1 }}>
+
           <Box className="tooltip-header">
             <Typography variant="h6" component="div" className="vehicle-name">
-              {data?.vehicleName || `Object ID: ${markerId.substring(0, 8)}...`}
+              {isLoading ? "Decrypting..." : (displayData?.vehicleName || `Object ID: ${markerId.substring(0, 8)}...`)}
             </Typography>
             <Box className="callsign-container">
-              <Typography variant="caption" className="callsign-label">
-                Callsign:
-              </Typography>
+              <Typography variant="caption" className="callsign-label">Callsign:</Typography>
               <Typography variant="caption" className="callsign-value">
-                {data?.callsign || "N/A"}
+                {displayData?.callsign || "N/A"}
               </Typography>
             </Box>
           </Box>
-          
-          {/* Telemetry Section */}
-          <Box className="tooltip-section">
-            <Typography variant="body2" className="section-title">
-              Telemetry
-            </Typography>
-            <Box className="telemetry-grid">
-              
-              {/* Speed Gauge Column */}
-              <Box className="speed-gauge-column">
-                <SpeedGauge speedString={data?.speed} />
-              </Box>
 
-              {/* Other Telemetry Stats Column */}
-              <Box className="telemetry-details-column: ">
-                {renderDetail(TrendingUpIcon, "Altitude: ", data?.altitude)}
-                {renderDetail(GpsFixedIcon, "Heading: ", data?.heading)}
-                {renderDetail(FlightIcon, "Type: ", data?.aircraft_type)}
+          <Box className="tooltip-section">
+            <Typography variant="body2" className="section-title">Telemetry</Typography>
+            <Box className="telemetry-grid">
+              <Box className="speed-gauge-column">
+                <SpeedGauge speedString={displayData?.speed} />
+              </Box>
+              <Box className="telemetry-details-column">
+                {renderDetail(TrendingUpIcon, "Altitude: ", displayData?.altitude)}
+                {renderDetail(GpsFixedIcon, "Heading: ", displayData?.heading)}
+                {renderDetail(FlightIcon, "Type: ", displayData?.aircraft_type)}
               </Box>
             </Box>
           </Box>
 
-          {/* Route/Location Information */}
           <Box className="tooltip-section">
-            <Typography variant="body2" className="section-title">
-              Flight Details
-            </Typography>
-            {renderDetail(AltRouteIcon, "Origin: ", data?.origin)}
-            {renderDetail(AltRouteIcon, "Destination: ", data?.destination)}
+            <Typography variant="body2" className="section-title">Flight Details</Typography>
+            {renderDetail(AltRouteIcon, "Origin: ", displayData?.origin)}
+            {renderDetail(AltRouteIcon, "Destination: ", displayData?.destination)}
             {renderDetail(MyLocationIcon, "Coordinates: ", `${currentPos.lat.toFixed(4)}, ${currentPos.lng.toFixed(4)}`)}
           </Box>
+
+          {isLoading && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
+              <CircularProgress size={20} />
+            </Box>
+          )}
         </Box>
       </Tooltip>
     </Marker>
