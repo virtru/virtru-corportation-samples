@@ -43,11 +43,11 @@ export function MarkerLayer({ tdfObjects = [], isCluster = false, layerName = 'u
       : value;
 
     return (
-      <Stack direction="column" gap={0} spacing={0} mb={2}>
-        <Typography variant="h6" sx={{ wordBreak: 'break-all' }}>
+      <Stack direction="column" gap={0} spacing={0} mb={1} sx={{ minWidth: '320px' }}>
+        <Typography variant="h6" sx={{ wordBreak: 'break-word', lineHeight: 1.2 }}>
           {getFieldTitle(displayFields?.header)}: {displayValue}
         </Typography>
-        <Typography variant="body1" sx={{ color: '#000' }}>
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
           {formattedDateTime}
         </Typography>
       </Stack>
@@ -207,9 +207,13 @@ export function MarkerLayer({ tdfObjects = [], isCluster = false, layerName = 'u
 
       return (
         <Marker position={{ lat: coordinates[1], lng: coordinates[0] }} key={tdfObject.tdfObject.id} icon={dynamicTdfIcon}>
-          <Popup>
-            {renderHeader(tdfObject)}
-            {renderDetails(tdfObject)}
+          <Popup minWidth={350} maxWidth={500}>
+            <Box sx={{ p: 1, display: 'block', width: '100%' }}>
+              {renderHeader(tdfObject)}
+              <Box sx={{ mt: 1 }}>
+              {renderDetails(tdfObject)}
+              </Box>
+            </Box>
           </Popup>
         </Marker>
       );
