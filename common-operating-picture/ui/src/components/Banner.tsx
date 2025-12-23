@@ -13,16 +13,11 @@ export const Banner = () => {
   const getBannerData = () => {
     const activeValues = Array.from(activeEntitlements).map(getFqnValue);
 
-    // 1. Find the Highest Classification only
+    // Highest Classification only
     const highestClass = [...Classifications]
       .reverse()
       .find(cls => activeValues.includes(cls)) || 'UNCLASSIFIED';
-
-    // 2. Identify Non-Classification values (NeedToKnow and RelTo)
-    // We filter out anything that exists in the Classifications array
     const caveats = activeValues.filter(val => !Classifications.includes(val));
-
-    // 3. Construct the string: "HIGHEST_CLASS // CAVEAT1 // CAVEAT2"
     const displayString = caveats.length > 0
       ? `${highestClass}//${caveats.join('//')}`
       : highestClass;

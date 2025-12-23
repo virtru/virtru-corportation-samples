@@ -10,8 +10,9 @@ import { propertyOf } from 'lodash';
 import { CreateTdfNoteRequest } from '@/proto/tdf_object/v1/tdf_note_pb';
 import { PartialMessage } from '@bufbuild/protobuf';
 import { useTDF } from '@/hooks/useTdf';
-import { BannerContext } from '@/contexts/BannerContext';
+import { BannerContext, extractValues } from '@/contexts/BannerContext';
 import { checkNoteEntitlements } from '@/utils/attributes';
+import { ObjectBanner } from '@/components/ObjectBanner';
 
 // Note data structure to pass note attributes back to parent
 interface NoteAttributeData {
@@ -257,11 +258,22 @@ export function TdfObjectResult({ tdfObjectResponse: o, categorizedData, onFlyTo
     return (<>{details}{notes}</>);
   };
 
+  const objClass = extractValues(o.decryptedData.attrClassification || []).split(', ');
+  const objNTK = extractValues(o.decryptedData.attrNeedToKnow || []).split(', ');
+  const objRel = extractValues(o.decryptedData.attrRelTo || []).split(', ');
+  const objCaveats = [...objNTK, ...objRel].filter(v => v !== '');
 
   return (
     <Accordion key={o.tdfObject.id} sx={{ mb: 2 }} defaultExpanded={true}>
       <AccordionSummary expandIcon={<ExpandMore />}>
-        {renderHeader()}
+        <Box sx={{ width: '100%' }}>
+          <ObjectBanner
+            objClassification={objClass}
+            objCaveats={objCaveats}
+            notes={objectNotes}
+          />
+          {renderHeader()}
+        </Box>
       </AccordionSummary>
       <AccordionDetails>
         {renderDetailsAndNotes()}

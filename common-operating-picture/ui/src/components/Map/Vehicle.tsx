@@ -10,8 +10,10 @@ import FlightIcon from '@mui/icons-material/Flight';
 import { mapStringToColor } from "@/pages/SourceTypes/helpers/markers";
 import { useRpcClient } from '@/hooks/useRpcClient';
 import { TdfObject } from '@/proto/tdf_object/v1/tdf_object_pb';
+import { ObjectBanner } from '@/components/ObjectBanner';
+import { extractValues } from '@/contexts/BannerContext';
 
-// --- Interfaces (Standard) ---
+// Interfaces
 interface Coordinate {
   lat: number;
   lng: number;
@@ -247,6 +249,23 @@ export function VehicleMarker({ markerId, Position, data, rawObject, onClick }: 
     iconAnchor: ICON_PROPS.anchor,
   });
 
+  const objClass = useMemo(() =>
+    extractValues(displayData?.attrClassification || []).split(', ').filter(Boolean),
+    [displayData?.attrClassification]
+  );
+
+  const objNTK = useMemo(() =>
+    extractValues(displayData?.attrNeedToKnow || []).split(', ').filter(Boolean),
+    [displayData?.attrNeedToKnow]
+  );
+
+  const objRel = useMemo(() =>
+    extractValues(displayData?.attrRelTo || []).split(', ').filter(Boolean),
+    [displayData?.attrRelTo]
+  );
+
+  const objCaveats = [...objNTK, ...objRel];
+
   return (
     <Marker
       position={currentPos}
@@ -256,10 +275,14 @@ export function VehicleMarker({ markerId, Position, data, rawObject, onClick }: 
     >
       <Tooltip direction="top" permanent={false} sticky className="custom-compact-tooltip">
         <Box className="tooltip-container" sx={{ opacity: isLoading ? 0.6 : 1 }}>
-
+          <ObjectBanner
+            objClassification={objClass.length > 0 ? objClass : ['UNCLASSIFIED']}
+            objCaveats={objCaveats}
+            notes={[]}
+          />
           <Box className="tooltip-header">
             <Typography variant="h6" component="div" className="vehicle-name">
-              {isLoading ? "Decrypting..." : (displayData?.vehicleName || `Object ID: ${markerId.substring(0, 8)}...`)}
+              {isLoading ? "Decrypting..." : (displayData?.vehicleName || `ENCRYPTED ID: ${markerId.substring(0, 8)}...`)}
             </Typography>
             <Box className="callsign-container">
               <Typography variant="caption" className="callsign-label">Callsign:</Typography>
