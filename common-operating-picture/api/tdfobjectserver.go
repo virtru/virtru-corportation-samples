@@ -57,7 +57,7 @@ func (s *TdfObjectServer) CreateTdfNote(
 	search := []byte(req.Msg.Search)
 	if len(search) == 0 {
 		// todo: figure out how to use with NULL db type
-		search = []byte("{}")
+		search = []byte("null")
 	}
 
 	// Convert the string to uuid.UUID
@@ -224,12 +224,12 @@ func (s *TdfObjectServer) CreateTdfObject(
 	var respErr *connect.Error
 	s.DBQueries.CreateTdfObjects(ctx, []db.CreateTdfObjectsParams{
 		{
-			SrcType: strings.ToLower(req.Msg.SrcType),
-			Ts:      ts,
-			Geo:     geo,
-			Search:  search,
+			SrcType:  strings.ToLower(req.Msg.SrcType),
+			Ts:       ts,
+			Geo:      geo,
+			Search:   search,
 			Metadata: metadata,
-			TdfBlob: req.Msg.TdfBlob,
+			TdfBlob:  req.Msg.TdfBlob,
 		},
 	}).QueryRow(func(i int, id uuid.UUID, err error) {
 		if err != nil {

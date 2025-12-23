@@ -6,6 +6,7 @@ ui/.env
 
 # Development
 db-data/
+COP_venv/
 
 # Sensitive
 config.yaml
