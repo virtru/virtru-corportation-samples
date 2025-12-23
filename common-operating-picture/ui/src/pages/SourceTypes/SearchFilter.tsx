@@ -9,7 +9,7 @@ import { RJSFSchema } from '@rjsf/utils';
 import Form, { IChangeEvent, withTheme } from '@rjsf/core';
 import { Theme as RJSFFormMuiTheme } from '@rjsf/mui';
 import { customizeValidator } from '@rjsf/validator-ajv8';
-import { BannerContext, calculateBannerAttributes } from '@/contexts/BannerContext';
+import { BannerContext } from '@/contexts/BannerContext';
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string';
 import { LatLng, Map } from 'leaflet';
 import { TimestampSelector } from '@/proto/tdf_object/v1/tdf_object_pb.ts';
@@ -31,17 +31,11 @@ type QueryParamState = {
 
 type Props = {
   map: Map | null;
-  //onSearch: (results: TdfObjectResponse[]) => void;
 }
 
 export function SearchFilter({ map }: Props) { //onSearch removed
   const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
-
-  // State to store original banner values
-  const [originalClassification, setOriginalClassification] = useState('');
-  const [originalNeedToKnow, setOriginalNeedToKnow] = useState('');
-  const [originalRelTo, setOriginalRelTo] = useState('');
 
   // Define entitlements and unavailableAttrs state correctly
   const [unavailableAttrs, setUnavailAttrs] = useState<string[]>([]);
@@ -52,14 +46,7 @@ export function SearchFilter({ map }: Props) { //onSearch removed
   const { id: srcTypeId, searchFormSchema } = useSourceType();
 
   const {
-    setClassification,
-    setNeedToKnow,
-    setRelTo,
     setHasResults,
-    setSearchIsActive, // Need to pull setSearchIsActive back in
-    classification: activeClassification, // Need current values to save them
-    needToKnow: activeNeedToKnow,
-    relTo: activeRelTo,
     activeEntitlements,
     setTdfObjects,
   } = useContext(BannerContext);
@@ -74,23 +61,11 @@ export function SearchFilter({ map }: Props) { //onSearch removed
 
   // Handler to open the menu and save current banner state
   const handleOpenMenu = (e: React.MouseEvent<HTMLButtonElement>) => {
-    // Save current active banner values
-    setOriginalClassification(activeClassification);
-    setOriginalNeedToKnow(activeNeedToKnow);
-    setOriginalRelTo(activeRelTo);
-
-    setSearchIsActive(true); // Update banner context state
     setMenuAnchorEl(e.currentTarget); // Open the popover
   };
 
   // Handler to close the menu, restoring original banner state
   const handleCancel = () => {
-    // Restore the classification, needToKnow, and relTo from the stored originals
-    setClassification(originalClassification);
-    setNeedToKnow(originalNeedToKnow);
-    setRelTo(originalRelTo);
-
-    setSearchIsActive(false); // Update banner context state
     setMenuAnchorEl(null); // Close the popover
   };
 
@@ -218,20 +193,11 @@ export function SearchFilter({ map }: Props) { //onSearch removed
       });
 
       if (filteredResponse.length) {
-            const { classification, needToKnow, relTo } = calculateBannerAttributes(filteredResponse);
-            setClassification(classification);
-            setNeedToKnow(needToKnow);
-            setRelTo(relTo);
             setHasResults(true);
         } else {
-          // Clear banner if no results
-          setClassification('');
-          setNeedToKnow('');
-          setRelTo('');
           setHasResults(false);
       }
 
-      setSearchIsActive(false);
       setMenuAnchorEl(null);
       setFormData(searchFormData);
       setTdfObjects(filteredResponse);
@@ -253,7 +219,6 @@ export function SearchFilter({ map }: Props) { //onSearch removed
       setError('Server error encountered, please try again later.');
       setHasResults(false);
       setTdfObjects([]);
-      //onSearch([]);
       setSearchParams(params => {
         params.delete('q');
         return params;
@@ -288,10 +253,6 @@ export function SearchFilter({ map }: Props) { //onSearch removed
       });
     }
   }, [searchParams, map]);
-
-   useEffect(() => {
-     setSearchIsActive(Boolean(menuAnchorEl));
-   }), [menuAnchorEl];
 
   return (
     <>

@@ -1,9 +1,9 @@
 import { LatLng } from 'leaflet';
 import { Card, CardContent, Typography } from '@mui/material';
 import { TdfObjectResponse } from '@/hooks/useRpcClient';
-import { useState, useEffect, useContext, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { BannerContext, ClassificationPriority, Classifications, extractValues } from '@/contexts/BannerContext';
+import { ClassificationPriority, extractValues } from '@/contexts/BannerContext';
 import { TdfObjectResult } from './TdfObjectResult';
 
 type Props = {
@@ -28,9 +28,6 @@ export function SearchResults({ tdfObjects, onFlyToClick }: Props) {
 
   const { user } = useAuth();
   const [allNoteAttributes, setAllNoteAttributes] = useState<Record<string, NoteAttributeData[]>>({});
-
-  // Banner Context
-  const { classification: currentClassification, needToKnow: currentNeedToKnow, relTo: currentRelTo, setClassification, setNeedToKnow, setRelTo } = useContext(BannerContext);
 
   // Handler to receive updated notes
   const handleNotesUpdated = useCallback((objectId: string, notes: NoteAttributeData[]) => {
@@ -101,28 +98,9 @@ export function SearchResults({ tdfObjects, onFlyToClick }: Props) {
         extractNoteAttr(parsedNote.attrRelto).forEach(v => relTo.add(v));
     });
 
-
-    // Prepare new banner values
-    const newClassification = Classifications[classPriority];
-    const newNeedToKnow = [...needToKnow].filter(v => v.trim() !== '').join(', ');
-    const newRelTo = [...relTo].filter(v => v.trim() !== '').join(', ');
-
-    // Apply updates only if there are changes from active banner
-    if (newClassification !== currentClassification) {
-        setClassification(newClassification);
-    }
-    if (newNeedToKnow !== currentNeedToKnow) {
-        setNeedToKnow(newNeedToKnow);
-    }
-    if (newRelTo !== currentRelTo) {
-        setRelTo(newRelTo);
-    }
   }, [
       tdfObjects,
       allNoteAttributes,
-      setClassification,
-      setNeedToKnow,
-      setRelTo
   ]);
 
 

@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useContext } from 'react';
+import { useRef, useState, useContext } from 'react';
 import { LatLng } from 'leaflet';
 import { useTDF } from '@/hooks/useTdf';
 import { useRpcClient } from '@/hooks/useRpcClient';
@@ -32,20 +32,8 @@ const formIdPrefix = 'srcTypeForm';
 export function CreateDialog({ open, onClose }: Props) {
   const [mapPosition, setMapPosition] = useState<LatLng>();
   const [ unavailableAttrs, setUnavailAttrs ] = useState<string[]>([]);
-  //const [ entitlements, setEntitlements ] = useState<Set<string>>(new Set());
-
-  // New state to store the original banner values
-  const [originalClassification, setOriginalClassification] = useState('');
-  const [originalNeedToKnow, setOriginalNeedToKnow] = useState('');
-  const [originalRelTo, setOriginalRelTo] = useState('');
 
   const {
-    setClassification,
-    setNeedToKnow,
-    setRelTo,
-    classification: activeClassification,
-    needToKnow: activeNeedToKnow,
-    relTo: activeRelTo,
     activeEntitlements,
   } = useContext(BannerContext);
 
@@ -56,21 +44,7 @@ export function CreateDialog({ open, onClose }: Props) {
   const { encrypt } = useTDF();
   const { createTdfObject } = useRpcClient();
 
-  useEffect(() => {
-    if (open) {
-      setOriginalClassification(activeClassification);
-      setOriginalNeedToKnow(activeNeedToKnow);
-      setOriginalRelTo(activeRelTo);
-    }
-  }, [open]);
-
   const handleCancel = () => {
-    // Restore the classification, needToKnow, and relTo from the stored originals
-    setClassification(originalClassification);
-    setNeedToKnow(originalNeedToKnow);
-    setRelTo(originalRelTo);
-
-    // Then call the original onClose handler
     onClose();
   };
 
@@ -196,11 +170,6 @@ export function CreateDialog({ open, onClose }: Props) {
       await createTdfObject(tdfObject);
       //console.debug('Form submission successful:', response);
 
-      // todo: do we need to pass the created object back to the parent?
-      // Restore the classification, needToKnow, and relTo from the stored originals
-      setClassification(originalClassification);
-      setNeedToKnow(originalNeedToKnow);
-      setRelTo(originalRelTo);
       onClose();
     } catch (err) {
       console.error('Form submission failed:', err);

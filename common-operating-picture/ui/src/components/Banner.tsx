@@ -1,34 +1,54 @@
-import {  Box } from '@mui/material';
+import { Box } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import { useContext, useEffect } from 'react';
-import { BannerContext, BannerClassification } from '@/contexts/BannerContext';
-import { useLocation } from 'react-router-dom';
+import { useContext } from 'react';
+import { BannerContext, Classifications, BannerClassification } from '@/contexts/BannerContext';
 
 export const Banner = () => {
   const theme = useTheme();
-  const { classification, setClassification, needToKnow, setNeedToKnow, relTo, setRelTo, searchIsActive, hasResults } = useContext(BannerContext);
-  const bannerColor = BannerClassification[classification as keyof typeof BannerClassification];
-  const location = useLocation();
-  const createIsActive = location?.search?.includes('mode=create');
-  const showBanner = location?.pathname === '/source-types' && (createIsActive || searchIsActive || hasResults);
-  useEffect(() => {
-    if (!showBanner) {
-      setClassification('');
-      setNeedToKnow('');
-      setRelTo('');
-    }
-  }
-  , [setClassification, setNeedToKnow, setRelTo, location.pathname, createIsActive, searchIsActive, hasResults, showBanner]);
+  const { activeEntitlements } = useContext(BannerContext);
 
-  return showBanner && classification && 
-        (<Box 
-          style={
-            { 
-              background: bannerColor, 
-              zIndex: theme.zIndex.modal + 1,
-              textAlign: 'center',
-            }
-          }>
-          {[classification, needToKnow, `${relTo ? 'REL TO ' : ''}${relTo}`].filter((v) => v).join(' // ')}
-        </Box>);
+  // Helper to extract the value from the FQN (e.g., 'secret')
+  const getFqnValue = (fqn: string): string => (fqn || '').split('/').pop()?.toUpperCase() || '';
+
+  const getBannerData = () => {
+    const activeValues = Array.from(activeEntitlements).map(getFqnValue);
+
+    // 1. Find the Highest Classification only
+    const highestClass = [...Classifications]
+      .reverse()
+      .find(cls => activeValues.includes(cls)) || 'UNCLASSIFIED';
+
+    // 2. Identify Non-Classification values (NeedToKnow and RelTo)
+    // We filter out anything that exists in the Classifications array
+    const caveats = activeValues.filter(val => !Classifications.includes(val));
+
+    // 3. Construct the string: "HIGHEST_CLASS // CAVEAT1 // CAVEAT2"
+    const displayString = caveats.length > 0
+      ? `${highestClass}//${caveats.join('//')}`
+      : highestClass;
+
+    return {
+      label: "MAX CLASSIFICATION UP TO: " + displayString,
+      color: BannerClassification[highestClass]
+    };
+  };
+
+  const { label, color } = getBannerData();
+
+  if ( activeEntitlements.size === 0) return null;
+
+  return (
+    <Box
+      sx={{
+        background: color,
+        color: 'white',
+        zIndex: theme.zIndex.modal + 1,
+        textAlign: 'center',
+        fontWeight: 'bold',
+        padding: '4px 0',
+      }}
+    >
+      {label}
+    </Box>
+  );
 };
