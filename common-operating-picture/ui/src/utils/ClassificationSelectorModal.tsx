@@ -32,7 +32,6 @@ interface AttributeValue {
 
 export function ClassificationSelectorModal({ isOpen, onClose, userEntitlements }: ClassificationModalProps) {
   const {
-    setClassification,
     setHasResults,
     setActiveEntitlements,
     setTdfObjects,
@@ -182,9 +181,6 @@ export function ClassificationSelectorModal({ isOpen, onClose, userEntitlements 
             return true;
         })
     );
-
-    //Update both the display classification and the active entitlements set
-    setClassification(activeClassification);
     setActiveEntitlements(newActiveEntitlements);
 
     //Refresh results after setting new classification

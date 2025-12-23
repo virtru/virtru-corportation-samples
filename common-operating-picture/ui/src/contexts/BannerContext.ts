@@ -52,12 +52,6 @@ export const BannerClassification = Classifications.reduce((classification, c) =
 
 
 type BannerContextType = {
-    classification: string,
-    setClassification: Dispatch<SetStateAction<string>>,
-    needToKnow: string,
-    setNeedToKnow: Dispatch<SetStateAction<string>>,
-    relTo: string,
-    setRelTo: Dispatch<SetStateAction<string>>,
     searchIsActive: boolean,
     setSearchIsActive: Dispatch<SetStateAction<boolean>>,
     hasResults: boolean,
@@ -70,12 +64,6 @@ type BannerContextType = {
 
 export const BannerContext = createContext<BannerContextType>(
     {
-        classification: '',
-        setClassification: () => {},
-        needToKnow: '',
-        setNeedToKnow: () => {},
-        relTo: '',
-        setRelTo: () => {},
         searchIsActive: false,
         setSearchIsActive: () => {},
         hasResults: false,

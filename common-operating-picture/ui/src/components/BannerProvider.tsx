@@ -4,9 +4,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { TdfObjectResponse } from '@/hooks/useRpcClient';
 
 export const BannerProvider = ({ children }: { children: ReactNode }) => {
-    const [classification, setClassification] = useState('');
-    const [needToKnow, setNeedToKnow] = useState('');
-    const [relTo, setRelTo] = useState('');
     const [searchIsActive, setSearchIsActive] = useState(false);
     const [hasResults, setHasResults] = useState(false);
 
@@ -43,9 +40,6 @@ export const BannerProvider = ({ children }: { children: ReactNode }) => {
 
     return (
       <BannerContext.Provider value={{
-            classification, setClassification,
-            needToKnow, setNeedToKnow,
-            relTo, setRelTo,
             searchIsActive, setSearchIsActive,
             hasResults, setHasResults,
             activeEntitlements, setActiveEntitlements,
