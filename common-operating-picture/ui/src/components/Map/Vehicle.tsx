@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef } from "react";
-import { Marker, Tooltip } from "react-leaflet";
+import { Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import { Typography, Box, CircularProgress } from "@mui/material";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
@@ -170,13 +170,12 @@ const renderDetail = (Icon: React.ElementType, label: string, value: string | un
   </Box>
 );
 
-// --- VehicleMarker Component ---
+// VehicleMarker Component
 export function VehicleMarker({ markerId, Position, data, rawObject, onClick }: VehicleProps) {
   const { transformTdfObject } = useRpcClient();
   const [isLoading, setIsLoading] = useState(false);
   const [decryptedData, setDecryptedData] = useState<any>(null); // State for decrypted results
   const [currentPos, setCurrentPos] = useState(Position);
-  const [rotationAngle, setRotationAngle] = useState(0);
   const markerRef = useRef<L.Marker>(null);
 
   // Combine static data with decrypted data (decrypted takes priority)
@@ -185,14 +184,23 @@ export function VehicleMarker({ markerId, Position, data, rawObject, onClick }: 
     ...decryptedData
   }), [data, decryptedData]);
 
+  const [rotationAngle, setRotationAngle] = useState<number>(() => {
+  const initialHeading = parseInt(displayData?.heading || "0", 10);
+  return isNaN(initialHeading) ? 0 : initialHeading;
+  });
+
   useEffect(() => {
-    // ... (Your existing animation logic remains identical) ...
     const startPos = currentPos;
     const targetPos = Position;
     const duration = 3000;
 
     if (startPos.lat !== targetPos.lat || startPos.lng !== targetPos.lng) {
-      setRotationAngle(calculateBearing(startPos, targetPos));
+    setRotationAngle(calculateBearing(startPos, targetPos));
+    } else if (displayData?.heading) {
+      const dataHeading = parseInt(displayData.heading, 10);
+      if (!isNaN(dataHeading)) {
+        setRotationAngle(dataHeading);
+      }
     }
 
     let lngDelta = targetPos.lng - startPos.lng;
@@ -216,12 +224,17 @@ export function VehicleMarker({ markerId, Position, data, rawObject, onClick }: 
       if (newLng <= -180) newLng += 360;
 
       markerRef.current?.setLatLng({ lat: newLat, lng: newLng });
+
+      if (markerRef.current?.isPopupOpen()) {
+        markerRef.current.getPopup()?.update();
+      }
+
       setCurrentPos({ lat: newLat, lng: newLng });
       if (progress < 1) frameId = requestAnimationFrame(animate);
     };
     frameId = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(frameId);
-  }, [Position]);
+  }, [Position, displayData?.heading]);
 
   // Decryption handler
   const handleMarkerClick = async () => {
@@ -273,16 +286,25 @@ export function VehicleMarker({ markerId, Position, data, rawObject, onClick }: 
       icon={icon}
       eventHandlers={{ click: handleMarkerClick }}
     >
-      <Tooltip direction="top" permanent={false} sticky className="custom-compact-tooltip">
-        <Box className="tooltip-container" sx={{ opacity: isLoading ? 0.6 : 1 }}>
+      <Popup
+        minWidth={260}
+        maxWidth={320}
+        offset={[0, -15]}
+        className="custom-vehicle-popup"
+        closeButton={false}
+      >
+        <Box
+          className="tooltip-container"
+          sx={{ opacity: isLoading ? 0.8 : 1, position: 'relative', paddingBottom: '4px' }}
+        >
           <ObjectBanner
-            objClassification={objClass.length > 0 ? objClass : ['UNCLASSIFIED']}
+            objClassification={objClass.length > 0 ? objClass : ['N/A']}
             objCaveats={objCaveats}
             notes={[]}
           />
-          <Box className="tooltip-header">
-            <Typography variant="h6" component="div" className="vehicle-name">
-              {isLoading ? "Decrypting..." : (displayData?.vehicleName || `ENCRYPTED ID: ${markerId.substring(0, 8)}...`)}
+          <Box className="tooltip-header" sx={{ mt: 1 }}>
+            <Typography variant="h6" component="div" className="vehicle-name" sx={{ pr: 2 }}>
+              {isLoading ? "Decrypting..." : (displayData?.vehicleName || `ID: ${markerId.substring(0, 8)}`)}
             </Typography>
             <Box className="callsign-container">
               <Typography variant="caption" className="callsign-label">Callsign:</Typography>
@@ -319,7 +341,7 @@ export function VehicleMarker({ markerId, Position, data, rawObject, onClick }: 
             </Box>
           )}
         </Box>
-      </Tooltip>
+      </Popup>
     </Marker>
   );
 }

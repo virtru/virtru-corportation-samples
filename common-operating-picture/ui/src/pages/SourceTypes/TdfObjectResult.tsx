@@ -264,7 +264,7 @@ export function TdfObjectResult({ tdfObjectResponse: o, categorizedData, onFlyTo
   const objCaveats = [...objNTK, ...objRel].filter(v => v !== '');
 
   return (
-    <Accordion key={o.tdfObject.id} sx={{ mb: 2 }} defaultExpanded={true}>
+    <Accordion key={o.tdfObject.id} sx={{ mb: 2 }} defaultExpanded={false}>
       <AccordionSummary expandIcon={<ExpandMore />}>
         <Box sx={{ width: '100%' }}>
           <ObjectBanner
