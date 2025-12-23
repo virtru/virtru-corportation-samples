@@ -30,7 +30,6 @@ interface VehicleProps {
     altitude?: string;
     heading?: string;
     aircraft_type?: string;
-
     attrClassification?: string | string[];
     attrNeedToKnow?: string[];
     attrRelTo?: string[];

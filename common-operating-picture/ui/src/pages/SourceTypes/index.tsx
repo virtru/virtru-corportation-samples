@@ -148,14 +148,26 @@ export function SourceTypes() {
             console.error("Metadata parse error", e);
           }
 
+          let attributes = {};
+          //console.log("Search field:", o.search);
+          try {
+            if (o.search && o.search !== "null") {
+              attributes = JSON.parse(o.search);
+            }
+          } catch (e) {
+              console.error("Search field parse error", e);
+          }
+
           return {
             id: o.id, // Use the TDF object ID as the marker ID
             // Convert to { lat: number, lng: number }
             pos: { lat, lng },
             rawObject: o,
-            data: { ...telemetry },
+            data: { ...telemetry, ...attributes },
           };
         });
+
+      //console.log('Vehicle data fetched:', vehicleData);
 
       setVehicleData(vehicleData);
     } catch (error) {
