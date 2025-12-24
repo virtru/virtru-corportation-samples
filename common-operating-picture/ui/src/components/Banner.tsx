@@ -23,7 +23,7 @@ export const Banner = () => {
       : highestClass;
 
     return {
-      label: "MAX CLASSIFICATION UP TO: " + displayString,
+      label: "MAX CLASSIFICATION: " + displayString,
       color: BannerClassification[highestClass]
     };
   };
