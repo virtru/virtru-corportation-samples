@@ -3,51 +3,75 @@ import { BannerClassification, Classifications } from '@/contexts/BannerContext'
 
 interface ObjectBannerProps {
   objClassification: string[];
-  objCaveats: string[];
-  notes: any[]; 
+  objNTK: string[];
+  objRel: string[];
+  notes: any[];
 }
 
-export const ObjectBanner = ({ objClassification, objCaveats, notes }: ObjectBannerProps) => {
-  // Gather all values from the object and its notes
-  const allValues = new Set<string>();
+export const ObjectBanner = ({ objClassification, objNTK, objRel, notes }: ObjectBannerProps) => {
+  const classifications = new Set<string>();
+  const ntkValues = new Set<string>();
+  const relValues = new Set<string>();
 
-  // Add object values
-  objClassification.forEach(v => allValues.add(v.toUpperCase()));
-  objCaveats.forEach(v => allValues.add(v.toUpperCase()));
+  // Process Object Values
+  (objClassification ?? []).forEach(v => v && classifications.add(v.toUpperCase()));
+  (objNTK ?? []).forEach(v => v && ntkValues.add(v.toUpperCase()));
+  (objRel ?? []).forEach(v => v && relValues.add(v.toUpperCase()));
 
-  // Add note values
-  notes.forEach(note => {
+  // Validation for object classification
+   if (classifications.size === 0) {
+    throw new Error("Data Integrity Error: No classification found for object.");
+  }
+
+  // Process Note Values
+  (notes ?? []).forEach(note => {
     try {
-      const parsed = JSON.parse(note.tdfNote.search);
-      const extract = (arr?: string[]) => arr?.map(url => url.split('/').pop()?.toUpperCase() || '') || [];
-      extract(parsed.attrClassification).forEach(v => allValues.add(v));
-      extract(parsed.attrNeedtoknow).forEach(v => allValues.add(v));
-      extract(parsed.attrRelto).forEach(v => allValues.add(v));
-    } catch (e) { /* ignore parse errors */ }
+      // Use optional chaining for nested JSON paths
+      const searchData = note?.tdfNote?.search;
+      if (!searchData) return;
+      const parsed = JSON.parse(searchData);
+
+      const extract = (arr?: string[]) =>
+        arr?.map(url => url.split('/').pop()?.toUpperCase() || '').filter(Boolean) ?? [];
+
+      const noteClasses = extract(parsed.attrClassification);
+
+      // Validation for classification
+      if (noteClasses.length === 0) {
+       throw new Error(`Validation Error: Note ${note.id} is missing a classification.`);
+      }
+
+      extract(parsed.attrClassification).forEach(v => classifications.add(v));
+      extract(parsed.attrNeedtoknow).forEach(v => ntkValues.add(v));
+      extract(parsed.attrRelto).forEach(v => relValues.add(v));
+    } catch (e) {
+      console.error("Failed to parse note data", e);
+    }
   });
 
-  const activeValues = Array.from(allValues);
-
-  // Find highest classification
+  // Determine Highest Classification
   const highestClass = [...Classifications]
     .reverse()
-    .find(cls => activeValues.includes(cls)) || 'UNCLASSIFIED';
-  const caveats = activeValues.filter(val => !Classifications.includes(val) && val !== '');
-  const displayString = caveats.length > 0
-    ? `${highestClass}//${caveats.join('//')}`
+    .find(cls => classifications.has(cls)) || 'UNCLASSIFIED';
+
+  // Build the Caveat String
+  const combinedNTK = Array.from(ntkValues);
+  const combinedRel = Array.from(relValues);
+  const finalNTK = combinedNTK.filter(v => v !== highestClass && v !== '');
+  const finalRel = combinedRel.filter(v => v !== highestClass && v !== '');
+  const allCaveats = [...finalNTK, ...finalRel];
+
+  const displayString = allCaveats.length > 0
+    ? `${highestClass}//${allCaveats.join('//')}`
     : highestClass;
 
   const color = BannerClassification[highestClass] || '#ccc';
 
   return (
     <Box sx={{
-      background: color,
-      color: 'white',
-      textAlign: 'center',
-      fontWeight: 'bold',
-      fontSize: '0.75rem',
-      padding: '2px 0',
-      borderRadius: '4px 4px 0 0' // Rounded top to fit Accordion look
+      background: color, color: 'white', textAlign: 'center',
+      fontWeight: 'bold', fontSize: '0.75rem', padding: '2px 0',
+      borderRadius: '4px 4px 0 0'
     }}>
       {displayString}
     </Box>

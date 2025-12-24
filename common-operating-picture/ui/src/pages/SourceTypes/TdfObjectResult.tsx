@@ -39,18 +39,16 @@ export function TdfObjectResult({ tdfObjectResponse: o, categorizedData, onFlyTo
   const { displayFields, getFieldTitle } = useSourceType();
   const { encrypt } = useTDF();
   const { createNoteObject, queryNotes } = useRpcClient();
-
+  const { activeEntitlements } = useContext(BannerContext);
   // Isolated note text box state
   const [noteText, setNoteText] = useState('');
   // Isolated state for managing dropdown selections
   const [localSelectedValues, setLocalSelectedValues] = useState<{ [key: string]: string | string[] }>({});
   // Isolated state for note results for this object
   const [objectNotes, setObjectNotes] = useState<TdfNotesResponse[]>([]);
-
+  // Loading state
+  const [isLoading, setIsLoading] = useState(true);
   const prevObjectId = useRef<string | null>(null);
-
-  const { activeEntitlements } = useContext(BannerContext);
-
   // fetchNotes given objectId
   const fetchNotes = useCallback(async (objectId: string, isNoteSubmission = false) => {
 
@@ -60,6 +58,7 @@ export function TdfObjectResult({ tdfObjectResponse: o, categorizedData, onFlyTo
   // Update previous objectId reference
   if (!isNoteSubmission) {
     prevObjectId.current = objectId;
+    setIsLoading(true);
   }
 
   try {
@@ -85,6 +84,8 @@ export function TdfObjectResult({ tdfObjectResponse: o, categorizedData, onFlyTo
     onNotesUpdated(objectId, noteAttributes);
   } catch (error) {
     console.error('Error fetching notes:', error);
+  } finally {
+    setIsLoading(false); // End loading
   }
 }, [queryNotes, onNotesUpdated]);
 
@@ -171,7 +172,6 @@ export function TdfObjectResult({ tdfObjectResponse: o, categorizedData, onFlyTo
 
     // Create the note (submit)
     await createNoteObject(tdfNote);
-    //console.log(`Submitted note for ${o.tdfObject.id}.`);
 
     // Re-fetch notes and update parent
     setNoteText(''); // Clear text box
@@ -261,7 +261,10 @@ export function TdfObjectResult({ tdfObjectResponse: o, categorizedData, onFlyTo
   const objClass = extractValues(o.decryptedData.attrClassification || []).split(', ');
   const objNTK = extractValues(o.decryptedData.attrNeedToKnow || []).split(', ');
   const objRel = extractValues(o.decryptedData.attrRelTo || []).split(', ');
-  const objCaveats = [...objNTK, ...objRel].filter(v => v !== '');
+
+  if (isLoading) {
+    return null;
+  }
 
   return (
     <Accordion key={o.tdfObject.id} sx={{ mb: 2 }} defaultExpanded={false}>
@@ -269,7 +272,8 @@ export function TdfObjectResult({ tdfObjectResponse: o, categorizedData, onFlyTo
         <Box sx={{ width: '100%' }}>
           <ObjectBanner
             objClassification={objClass}
-            objCaveats={objCaveats}
+            objNTK={objNTK}
+            objRel={objRel}
             notes={objectNotes}
           />
           {renderHeader()}
