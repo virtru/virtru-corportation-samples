@@ -35,9 +35,6 @@ CLASSIFICATIONS = ["unclassified", "confidential", "secret", "topsecret"]
 CA_CERT_PATH = "./dsp-keys/rootCA.pem"
 ISSUER_ENDPOINT = "https://local-dsp.virtru.com:8443/auth/realms/opentdf"
 
-# --- Delete Statement ---
-DELETE_SQL = "DELETE FROM tdf_objects WHERE src_type = %s"
-
 # --- Insert Statement ---
 INSERT_SQL = """
 INSERT INTO tdf_objects (
@@ -161,7 +158,7 @@ def generate_tdf_records(count, sdk):
     return records
 
 # --- Insert Logic ---
-def insert_seed_data(tdf_blob: bytes, should_delete: bool):
+def insert_seed_data(tdf_blob: bytes):
     conn = None
     records = generate_tdf_records(NUM_RECORDS, tdf_blob)
 
@@ -177,12 +174,6 @@ def insert_seed_data(tdf_blob: bytes, should_delete: bool):
             port=DB_PORT
         )
         cursor = conn.cursor()
-
-        # --- Conditional Delete logic based on flag ---
-        if should_delete:
-            print(f"Flag --delete detected. Cleaning up records for src_type: {FIXED_SRC_TYPE}")
-            cursor.execute(DELETE_SQL, (FIXED_SRC_TYPE,))
-            print(f"Successfully deleted {cursor.rowcount} records.")
 
         # Batch Chunks Insert
         execute_batch(
@@ -213,7 +204,6 @@ def insert_seed_data(tdf_blob: bytes, should_delete: bool):
 if __name__ == "__main__":
     try:
         sdk_instance = get_sdk_instance(PLATFORM_ENDPOINT, CLIENT_ID, CLIENT_SECRET, CA_CERT_PATH, ISSUER_ENDPOINT)
-        # Pass the flag value to the insert function
-        insert_seed_data(sdk_instance, args.delete)
+        insert_seed_data(sdk_instance)
     except Exception as e:
         print(f"An error occurred: {e}")

@@ -40,6 +40,7 @@ func prepNoteForResponse(in db.TdfNote) *tdf_notev1.TdfNote {
 		Id:       in.ID.String(),
 		Ts:       timestamppb.New(in.Ts.Time),
 		ParentId: in.ParentID.String(),
+		Search:   string(in.Search),
 		TdfBlob:  in.TdfBlob,
 		TdfUri:   in.TdfUri.String,
 	}
