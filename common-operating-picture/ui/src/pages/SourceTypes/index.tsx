@@ -2,9 +2,9 @@ import { useEffect, useState, useContext, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { LayersControl, MapContainer, TileLayer } from 'react-leaflet';
 import { LatLng, Map } from 'leaflet';
-import { Box, Button, Grid } from '@mui/material';
+import { Box, Button, Grid, IconButton, Typography } from '@mui/material';
 import { AddCircle } from '@mui/icons-material';
-import { useRpcClient } from '@/hooks/useRpcClient';
+import { TdfObjectResponse, useRpcClient } from '@/hooks/useRpcClient';
 import { PageTitle } from '@/components/PageTitle';
 import { SourceTypeProvider } from './SourceTypeProvider';
 import { CreateDialog } from './CreateDialog';
@@ -19,6 +19,9 @@ import { VehicleLayer } from '@/components/Map/VehicleLayer';
 import { TimestampSelector } from '@/proto/tdf_object/v1/tdf_object_pb.ts';
 import { Timestamp } from '@bufbuild/protobuf';
 import dayjs from 'dayjs';
+import CloseIcon from '@mui/icons-material/Close';
+import { TdfObjectResult } from './TdfObjectResult';
+import { useEntitlements } from '@/hooks/useEntitlements';
 
 export interface VehicleDataItem {
   id: string;
@@ -56,6 +59,10 @@ export function SourceTypes() {
 
   const [vehicleData, setVehicleData] = useState<VehicleDataItem[]>([]);
   const vehicleSourceTypeId = "vehicles";
+
+  const [poppedOutVehicle, setPoppedOutVehicle] = useState<TdfObjectResponse | null>(null);
+
+  const { categorizedData } = useEntitlements();
 
   const filteredVehicleData = useMemo(() => {
     if (!activeEntitlements || activeEntitlements.size === 0 || activeEntitlements.has("NoAccess")) {
@@ -184,7 +191,7 @@ export function SourceTypes() {
   // Refresh vehicle data every so often
   useEffect(() => {
 
-    const REFRESH_INTERVAL_MS = 1000;
+    const REFRESH_INTERVAL_MS = 100000;
 
     const intervalId = setInterval(async () => {
       console.log("Refreshing vehicle data...", vehicleSourceTypeId);
@@ -236,7 +243,12 @@ export function SourceTypes() {
                       {filteredVehicleData.length > 0 && (
                     <LayersControl.Overlay name="Planes" checked>
                       {/* Vehicle Layer - key forces re-render when entitlements change */}
-                      <VehicleLayer key={`vehicles-${activeEntitlements.size}`} vehicleData={filteredVehicleData} onMarkerClick={handleVehicleClick}/>
+                      <VehicleLayer
+                        key={`vehicles-${activeEntitlements.size}`}
+                        vehicleData={filteredVehicleData}
+                        onMarkerClick={handleVehicleClick}
+                        onPopOut={setPoppedOutVehicle}
+                        />
                     </LayersControl.Overlay>
                     )}
                       {/* TDF Object Layer */}
@@ -257,7 +269,49 @@ export function SourceTypes() {
           </Grid>
         </Grid>
         <CreateDialog open={dialogOpen} onClose={handleDialogClose} />
+        {poppedOutVehicle && (
+          <Box className="popped-out-window" sx={{
+            position: 'fixed',
+            bottom: 20,
+            right: 20,
+            zIndex: 1000,
+            width: 450,
+            boxShadow: 3,
+            borderRadius: 1,
+            overflow: 'hidden'
+          }}>
+            <Box className="window-header" sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              p: 1,
+              bgcolor: 'primary.main',
+              color: 'white'
+            }}>
+              <Typography variant="subtitle2">Vehicle Details & Notes</Typography>
+              <IconButton size="small" onClick={() => setPoppedOutVehicle(null)} sx={{ color: 'white' }}>
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </Box>
+            <Box sx={{ p: 2, maxHeight: '60vh', overflowY: 'auto', bgcolor: 'background.paper' }}>
+              {/* Need to fix the source type to be what vehcile data will work with. Update to seed.sql.
+              */}
+              <SourceTypeProvider srcType={srcType}>
+                <TdfObjectResult
+                  key={poppedOutVehicle.tdfObject.id}
+                  tdfObjectResponse={poppedOutVehicle}
+                  categorizedData={categorizedData || {}}
+                  onFlyToClick={handleFlyToClick}
+                  onNotesUpdated={(objectId, notes) => {
+                    console.log(`Notes updated for ${objectId}`, notes);
+                  }}
+                />
+              </SourceTypeProvider>
+            </Box>
+          </Box>
+        )}
       </SourceTypeProvider>
     </>
   );
 }
+

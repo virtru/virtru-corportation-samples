@@ -1,7 +1,6 @@
-//import React from 'react';
-import { LayerGroup } from 'react-leaflet';
 import { VehicleMarker } from './Vehicle';
 import { TdfObject } from '@/proto/tdf_object/v1/tdf_object_pb';
+import { TdfObjectResponse } from '@/hooks/useRpcClient';
 
 interface VehicleDataItem {
   id: string;
@@ -23,23 +22,25 @@ interface VehicleDataItem {
 }
 
 interface VehicleLayerProps {
-  onMarkerClick: (vehicle: VehicleDataItem) => void;  // The function from Index.tsx
   vehicleData: VehicleDataItem[];
+  onMarkerClick: (vehicle: VehicleDataItem) => void;
+  onPopOut: (tdfResponse: TdfObjectResponse) => void;
 }
 
-export function VehicleLayer({ vehicleData, onMarkerClick }: VehicleLayerProps) {
+export function VehicleLayer({ vehicleData, onMarkerClick, onPopOut }: VehicleLayerProps) {
   return (
-    <LayerGroup>
-      {vehicleData.map((data) => (
+    <>
+      {vehicleData.map((vehicle) => (
         <VehicleMarker
-          key={data.id}
-          markerId={data.id}
-          Position={data.pos}
-          data={data.data}
-          rawObject={data.rawObject}
-          onClick={() => onMarkerClick(data)}
+          key={vehicle.id}
+          markerId={vehicle.id}
+          Position={vehicle.pos}
+          rawObject={vehicle.rawObject}
+          data={vehicle.data}
+          onClick={() => onMarkerClick(vehicle)}
+          onPopOut={onPopOut}
         />
       ))}
-    </LayerGroup>
+    </>
   );
 }

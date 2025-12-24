@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { Marker, Popup } from "react-leaflet";
 import L from "leaflet";
-import { Typography, Box, CircularProgress } from "@mui/material";
+import { Typography, Box, CircularProgress, Button } from "@mui/material";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import AltRouteIcon from "@mui/icons-material/AltRoute";
 import MyLocationIcon from "@mui/icons-material/MyLocation";
@@ -12,6 +12,7 @@ import { useRpcClient } from '@/hooks/useRpcClient';
 import { TdfObject } from '@/proto/tdf_object/v1/tdf_object_pb';
 import { ObjectBanner } from '@/components/ObjectBanner';
 import { extractValues } from '@/contexts/BannerContext';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
 // Interfaces
 interface Coordinate {
@@ -23,20 +24,9 @@ interface VehicleProps {
   markerId: string;
   Position: Coordinate;
   rawObject: TdfObject;
-  data?: {
-    vehicleName?: string | undefined;
-    callsign?: string;
-    origin?: string;
-    destination?: string;
-    speed?: string;
-    altitude?: string;
-    heading?: string;
-    aircraft_type?: string;
-    attrClassification?: string | string[];
-    attrNeedToKnow?: string[];
-    attrRelTo?: string[];
-  };
+  data?: any;
   onClick: () => void;
+  onPopOut: (tdfResponse: any) => void;
 }
 
 interface RotatableIconProps {
@@ -170,7 +160,7 @@ const renderDetail = (Icon: React.ElementType, label: string, value: string | un
 );
 
 // VehicleMarker Component
-export function VehicleMarker({ markerId, Position, data, rawObject, onClick }: VehicleProps) {
+export function VehicleMarker({ markerId, Position, data, rawObject, onClick, onPopOut }: VehicleProps) {
   const { transformTdfObject } = useRpcClient();
   const [isLoading, setIsLoading] = useState(false);
   const [decryptedData, setDecryptedData] = useState<any>(null); // State for decrypted results
@@ -272,6 +262,14 @@ export function VehicleMarker({ markerId, Position, data, rawObject, onClick }: 
     }
   };
 
+  const handlePopOutClick = () => {
+  const tdfResponse: any = {
+    tdfObject: rawObject,
+    decryptedData: displayData
+  };
+  onPopOut(tdfResponse);
+};
+
   const icon = RotatableIcon({
     color: getClassificationColor(displayData?.attrClassification),
     iconSize: ICON_PROPS.size,
@@ -355,6 +353,26 @@ export function VehicleMarker({ markerId, Position, data, rawObject, onClick }: 
               <CircularProgress size={20} />
             </Box>
           )}
+          <Button
+            fullWidth
+            variant="outlined"
+            size="small"
+            startIcon={<OpenInNewIcon sx={{ color: '#000000 !important' }}/>}
+            onClick={handlePopOutClick}
+            sx={{
+              mt: 2,
+              fontSize: '0.7rem',
+              backgroundColor: '#ffffffff',
+              color: '#000000',
+              '&:hover': {
+                backgroundColor: '#585858',
+                color: '#ffffff',
+              },
+              borderRadius: '4px'
+            }}
+          >
+            Pop Out
+          </Button>
         </Box>
       </Popup>
     </Marker>

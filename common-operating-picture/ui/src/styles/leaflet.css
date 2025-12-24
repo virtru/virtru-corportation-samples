@@ -215,3 +215,47 @@
 .detail-value {
   font-weight: 500;
 }
+
+/* Container for the "window" that pops out */
+.popped-out-window {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 400px;
+  background: white;
+  z-index: 2000; /* Higher than Leaflet */
+  box-shadow: 0px 10px 30px rgba(0,0,0,0.3);
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.3s ease-out;
+}
+
+.window-header {
+  background: #f5f5f5;
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #ffffff;
+  border-radius: 8px 8px 0 0;
+  cursor: move; /* Aesthetic only unless you add drag logic */
+}
+
+@keyframes slideIn {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Customizing the Leaflet Popup to look cleaner */
+.custom-vehicle-popup .leaflet-popup-content-wrapper {
+  padding: 0;
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+.custom-vehicle-popup .leaflet-popup-content {
+  margin: 0;
+  width: 300px !important;
+}

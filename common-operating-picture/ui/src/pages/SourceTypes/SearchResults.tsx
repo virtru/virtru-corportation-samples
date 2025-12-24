@@ -1,10 +1,10 @@
 import { LatLng } from 'leaflet';
 import { Card, CardContent, Typography } from '@mui/material';
 import { TdfObjectResponse } from '@/hooks/useRpcClient';
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useState, useEffect, useCallback } from 'react';
 import { ClassificationPriority, extractValues } from '@/contexts/BannerContext';
 import { TdfObjectResult } from './TdfObjectResult';
+import { useEntitlements } from '@/hooks/useEntitlements';
 
 type Props = {
   tdfObjects: TdfObjectResponse[];
@@ -25,9 +25,8 @@ interface NoteAttributeData {
 }
 
 export function SearchResults({ tdfObjects, onFlyToClick }: Props) {
-
-  const { user } = useAuth();
   const [allNoteAttributes, setAllNoteAttributes] = useState<Record<string, NoteAttributeData[]>>({});
+  const { categorizedData } = useEntitlements();
 
   // Handler to receive updated notes
   const handleNotesUpdated = useCallback((objectId: string, notes: NoteAttributeData[]) => {
@@ -109,23 +108,6 @@ export function SearchResults({ tdfObjects, onFlyToClick }: Props) {
     combineAndUpdateBanner();
     //console.log("SearchResults useEffect triggered banner update.");
   }, [combineAndUpdateBanner]);
-
-  // Entitlement Parsing
-  const categorizedData: Record<string, string[]> = useMemo(() => {
-    const data: Record<string, string[]> = {};
-    user?.entitlements.forEach(url => {
-      const parts = url.split('/');
-      const category = parts[4];
-      const value = parts[6];
-
-      if (!data[category]) {
-        data[category] = [];
-      }
-      data[category].push(value);
-    });
-    return data;
-  }, [user]);
-
 
   if (!tdfObjects.length) {
     return (
