@@ -175,8 +175,6 @@ export function VehicleMarker({ markerId, Position, data, rawObject, onClick }: 
   const [isLoading, setIsLoading] = useState(false);
   const [decryptedData, setDecryptedData] = useState<any>(null); // State for decrypted results
   const [currentPos, setCurrentPos] = useState(Position);
-  const rotationRef = useRef(0); // was removed
-  const markerRef = useRef<L.Marker>(null);
 
   // Combine static data with decrypted data (decrypted takes priority)
   const displayData = useMemo(() => ({
@@ -184,12 +182,14 @@ export function VehicleMarker({ markerId, Position, data, rawObject, onClick }: 
     ...decryptedData
   }), [data, decryptedData]);
 
-  // const [rotationAngle, setRotationAngle] = useState<number>(() => {
-  // const initialHeading = parseInt(displayData?.heading || "0", 10);
-  // return isNaN(initialHeading) ? 0 : initialHeading;
-  // });
+  const initialHeading = useMemo(() => {
+    const heading = parseInt(displayData?.heading || "0", 10);
+    return isNaN(heading) ? 0 : heading;
+  }, []);
 
-  // the below useEffect was removed
+  const rotationRef = useRef<number>(initialHeading);
+  const markerRef = useRef<L.Marker>(null);
+
   useEffect(() => {
     // Re-apply rotation if the icon was re-created (e.g. color change) but bearing is same
     const markerEl = markerRef.current?.getElement();
@@ -204,26 +204,20 @@ export function VehicleMarker({ markerId, Position, data, rawObject, onClick }: 
     const targetPos = Position;
     const duration = 3000;
 
-    /* Bearing calculation was different:
-    if (startPos.lat !== targetPos.lat || startPos.lng !== targetPos.lng) {
-    setRotationAngle(calculateBearing(startPos, targetPos));
-    } else if (displayData?.heading) {
-      const dataHeading = parseInt(displayData.heading, 10);
-      if (!isNaN(dataHeading)) {
-        setRotationAngle(dataHeading);
-      }
-    }
-    */
-   
     if (startPos.lat !== targetPos.lat || startPos.lng !== targetPos.lng) {
       const newBearing = calculateBearing(startPos, targetPos);
       rotationRef.current = newBearing;
-
-      const markerEl = markerRef.current?.getElement();
-      const iconImg = markerEl?.querySelector('.vehicle-icon-img') as HTMLElement;
-      if (iconImg) {
-        iconImg.style.transform = `rotate(${newBearing}deg)`;
+    } else if (displayData?.heading) {
+      const dataHeading = parseInt(displayData.heading, 10);
+      if (!isNaN(dataHeading)) {
+        rotationRef.current = dataHeading;
       }
+    }
+
+    const markerEl = markerRef.current?.getElement();
+    const iconImg = markerEl?.querySelector('.vehicle-icon-img') as HTMLElement;
+    if (iconImg) {
+      iconImg.style.transform = `rotate(${rotationRef.current}deg)`;
     }
 
     let lngDelta = targetPos.lng - startPos.lng;
@@ -299,8 +293,6 @@ export function VehicleMarker({ markerId, Position, data, rawObject, onClick }: 
     [displayData?.attrRelTo]
   );
 
-  const objCaveats = [...objNTK, ...objRel];
-
   return (
     <Marker
       position={currentPos}
@@ -321,7 +313,8 @@ export function VehicleMarker({ markerId, Position, data, rawObject, onClick }: 
         >
           <ObjectBanner
             objClassification={objClass.length > 0 ? objClass : ['N/A']}
-            objCaveats={objCaveats}
+            objNTK={objNTK}
+            objRel={objRel}
             notes={[]}
           />
           <Box className="tooltip-header" sx={{ mt: 1 }}>
