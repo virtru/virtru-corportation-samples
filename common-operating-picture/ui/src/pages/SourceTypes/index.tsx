@@ -53,6 +53,7 @@ export function SourceTypes() {
 
   const { getSrcType } = useRpcClient();
   const [srcType, setSrcType] = useState<SrcType>();
+  const [vehicleSrcType, setVehicleSrcType] = useState<SrcType>();
 
   const { tdfObjects, setTdfObjects, activeEntitlements } = useContext(BannerContext);
   const { queryTdfObjectsLight } = useRpcClient();
@@ -183,6 +184,20 @@ export function SourceTypes() {
     }
   }, [queryTdfObjectsLight]);
 
+  useEffect(() => {
+  // Fetch the vehicles schema
+  const getVehicleSchema = async () => {
+    try {
+      const { srcType } = await getSrcType({ srcType: vehicleSourceTypeId });
+      setVehicleSrcType(srcType);
+    } catch (err) {
+      console.error("Failed to fetch vehicle source type schema", err);
+    }
+  };
+
+  getVehicleSchema();
+}, [getSrcType, fetchVehicles]);
+
   // New useEffect to fetch the data on component mount
   useEffect(() => {
       fetchVehicles(vehicleSourceTypeId);
@@ -191,7 +206,7 @@ export function SourceTypes() {
   // Refresh vehicle data every so often
   useEffect(() => {
 
-    const REFRESH_INTERVAL_MS = 100000;
+    const REFRESH_INTERVAL_MS = 1000;
 
     const intervalId = setInterval(async () => {
       console.log("Refreshing vehicle data...", vehicleSourceTypeId);
@@ -294,9 +309,7 @@ export function SourceTypes() {
               </IconButton>
             </Box>
             <Box sx={{ p: 2, maxHeight: '60vh', overflowY: 'auto', bgcolor: 'background.paper' }}>
-              {/* Need to fix the source type to be what vehcile data will work with. Update to seed.sql.
-              */}
-              <SourceTypeProvider srcType={srcType}>
+              <SourceTypeProvider srcType={vehicleSrcType}>
                 <TdfObjectResult
                   key={poppedOutVehicle.tdfObject.id}
                   tdfObjectResponse={poppedOutVehicle}
