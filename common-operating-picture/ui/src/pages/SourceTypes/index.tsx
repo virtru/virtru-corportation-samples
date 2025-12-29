@@ -206,7 +206,7 @@ export function SourceTypes() {
   // Refresh vehicle data every so often
   useEffect(() => {
 
-    const REFRESH_INTERVAL_MS = 1000;
+    const REFRESH_INTERVAL_MS = 100000;
 
     const intervalId = setInterval(async () => {
       console.log("Refreshing vehicle data...", vehicleSourceTypeId);
@@ -253,46 +253,26 @@ export function SourceTypes() {
         <Grid container spacing={3}>
           <Grid item xs={12} md={7}>
             <MapContainer style={{ width: '100%', height: '80vh' }} center={[0, 0]} zoom={3} ref={setMap}>
-              <LayersControl position="topright">
-                {/* Base Layers */}
-                <LayersControl.BaseLayer checked name="Street">
-                  <TileLayer
-                    url={config.tileServerUrl || "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"}
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                  />
-                </LayersControl.BaseLayer>
-                <LayersControl.BaseLayer name="Satellite">
-                  <TileLayer
-                    url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                    attribution='&copy; <a href="https://www.esri.com/">Esri</a> | Earthstar Geographics'
-                  />
-                </LayersControl.BaseLayer>
-                <LayersControl.BaseLayer name="Dark">
-                  <TileLayer
-                    url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
-                  />
-                </LayersControl.BaseLayer>
-
-                {/* Overlay Layers */}
-                {filteredVehicleData.length > 0 && (
-                  <LayersControl.Overlay name="Planes" checked>
-                    {/* Vehicle Layer - key forces re-render when entitlements change */}
-                    <VehicleLayer
-                      key={`vehicles-${activeEntitlements.size}`}
-                      vehicleData={filteredVehicleData}
-                      onMarkerClick={handleVehicleClick}
-                      onPopOut={setPoppedOutVehicle}
-                    />
-                  </LayersControl.Overlay>
-                )}
-                {/* TDF Object Layer */}
-                {tdfObjects.length > 0 && (
-                  <LayersControl.Overlay name="TDF Objects" checked>
-                    <TdfObjectsMapLayer tdfObjects={tdfObjects} />
-                  </LayersControl.Overlay>
-                )}
-              </LayersControl>
+              <TileLayer url={config.tileServerUrl} />
+                <LayersControl position="topright">
+                      {filteredVehicleData.length > 0 && (
+                    <LayersControl.Overlay name="Planes" checked>
+                      {/* Vehicle Layer - key forces re-render when entitlements change */}
+                      <VehicleLayer
+                        key={`vehicles-${activeEntitlements.size}`}
+                        vehicleData={filteredVehicleData}
+                        onMarkerClick={handleVehicleClick}
+                        onPopOut={setPoppedOutVehicle}
+                        />
+                    </LayersControl.Overlay>
+                    )}
+                      {/* TDF Object Layer */}
+                      {tdfObjects.length > 0 && (
+                    <LayersControl.Overlay name="TDF Objects" checked>
+                        <TdfObjectsMapLayer tdfObjects={tdfObjects} />
+                    </LayersControl.Overlay>
+                    )}
+                </LayersControl>
             </MapContainer>
           </Grid>
           <Grid item xs={12} md={5}>
@@ -347,3 +327,4 @@ export function SourceTypes() {
     </>
   );
 }
+

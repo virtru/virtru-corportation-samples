@@ -1,4 +1,3 @@
-import { LayerGroup } from 'react-leaflet';
 import { TdfObjectResponse } from '@/hooks/useRpcClient';
 import { ClusterLayer } from '@/components/Map/ClusterLayer';
 import { MarkerLayer } from '@/components/Map/MarkerLayer';
@@ -33,20 +32,12 @@ export function TdfObjectsMapLayer({ tdfObjects = [] }: Props) {
   // TODO: conditonally enable/disable clustering
   const clusterEnabled = false;
   if (clusterEnabled){
-    return (
-      <LayerGroup>
-        {layersToRender.map( key => (
-          <ClusterLayer tdfObjects={groupedTDFObjects[key]} key={`cluster-layer-${key}`} layerName={key}/>
-        ))}
-      </LayerGroup>
-    );
+    return layersToRender.map( key => (
+      <ClusterLayer tdfObjects={groupedTDFObjects[key]} key={`cluster-layer-${key}`} layerName={key}/>
+    ));
   } else {
-    return (
-      <LayerGroup>
-        {layersToRender.map( key => (
-          <MarkerLayer tdfObjects={groupedTDFObjects[key]} key={`layer-${key}`} layerName={key}/>
-        ))}
-      </LayerGroup>
-    );
+    return layersToRender.map( key => (
+      <MarkerLayer tdfObjects={groupedTDFObjects[key]} key={`layer-${key}`} layerName={key}/>
+    ));
   }
 }

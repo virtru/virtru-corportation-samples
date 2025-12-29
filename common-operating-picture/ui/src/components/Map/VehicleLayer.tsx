@@ -1,4 +1,3 @@
-import { LayerGroup } from 'react-leaflet';
 import { VehicleMarker } from './Vehicle';
 import { TdfObject } from '@/proto/tdf_object/v1/tdf_object_pb';
 import { TdfObjectResponse } from '@/hooks/useRpcClient';
@@ -30,7 +29,7 @@ interface VehicleLayerProps {
 
 export function VehicleLayer({ vehicleData, onMarkerClick, onPopOut }: VehicleLayerProps) {
   return (
-    <LayerGroup>
+    <>
       {vehicleData.map((vehicle) => (
         <VehicleMarker
           key={vehicle.id}
@@ -42,6 +41,6 @@ export function VehicleLayer({ vehicleData, onMarkerClick, onPopOut }: VehicleLa
           onPopOut={onPopOut}
         />
       ))}
-    </LayerGroup>
+    </>
   );
 }

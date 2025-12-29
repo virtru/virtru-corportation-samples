@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { Marker, Popup } from "react-leaflet";
 import L from "leaflet";
-import { Typography, Box, CircularProgress, IconButton, Tooltip } from "@mui/material";
+import { Typography, Box, CircularProgress, Button } from "@mui/material";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import AltRouteIcon from "@mui/icons-material/AltRoute";
 import MyLocationIcon from "@mui/icons-material/MyLocation";
@@ -309,37 +309,12 @@ export function VehicleMarker({ markerId, Position, data, rawObject, onClick, on
           className="tooltip-container"
           sx={{ opacity: isLoading ? 0.8 : 1, position: 'relative', paddingBottom: '4px' }}
         >
-          {/* Pop Out Icon Button - Top Right */}
-          <Tooltip title="Pop Out" placement="left">
-            <IconButton
-              size="small"
-              onClick={handlePopOutClick}
-              sx={{
-                position: 'absolute',
-                top: 8,
-                right: 8,
-                zIndex: 10,
-                padding: '4px',
-                backgroundColor: '#1976d2',
-                border: '1px solid #1565c0',
-                '&:hover': {
-                  backgroundColor: '#1565c0',
-                },
-              }}
-            >
-              <OpenInNewIcon sx={{ fontSize: '16px', color: '#fff' }} />
-            </IconButton>
-          </Tooltip>
-
-          {/* Banner with right padding to avoid overlap with popout button */}
-          <Box sx={{ pr: '36px' }}>
-            <ObjectBanner
-              objClassification={objClass.length > 0 ? objClass : ['N/A']}
-              objNTK={objNTK}
-              objRel={objRel}
-              notes={[]}
-            />
-          </Box>
+          <ObjectBanner
+            objClassification={objClass.length > 0 ? objClass : ['N/A']}
+            objNTK={objNTK}
+            objRel={objRel}
+            notes={[]}
+          />
           <Box className="tooltip-header" sx={{ mt: 1 }}>
             <Typography variant="h6" component="div" className="vehicle-name" sx={{ pr: 2 }}>
               {isLoading ? "Decrypting..." : (displayData?.vehicleName || `ID: ${markerId.substring(0, 8)}`)}
@@ -378,6 +353,26 @@ export function VehicleMarker({ markerId, Position, data, rawObject, onClick, on
               <CircularProgress size={20} />
             </Box>
           )}
+          <Button
+            fullWidth
+            variant="outlined"
+            size="small"
+            startIcon={<OpenInNewIcon sx={{ color: '#000000 !important' }}/>}
+            onClick={handlePopOutClick}
+            sx={{
+              mt: 2,
+              fontSize: '0.7rem',
+              backgroundColor: '#ffffffff',
+              color: '#000000',
+              '&:hover': {
+                backgroundColor: '#585858',
+                color: '#ffffff',
+              },
+              borderRadius: '4px'
+            }}
+          >
+            Pop Out
+          </Button>
         </Box>
       </Popup>
     </Marker>
