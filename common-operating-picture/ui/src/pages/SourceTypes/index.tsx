@@ -53,7 +53,6 @@ export function SourceTypes() {
 
   const { getSrcType } = useRpcClient();
   const [srcType, setSrcType] = useState<SrcType>();
-  const [vehicleSrcType, setVehicleSrcType] = useState<SrcType>();
 
   const { tdfObjects, setTdfObjects, activeEntitlements } = useContext(BannerContext);
   const { queryTdfObjectsLight } = useRpcClient();
@@ -184,20 +183,6 @@ export function SourceTypes() {
     }
   }, [queryTdfObjectsLight]);
 
-  useEffect(() => {
-  // Fetch the vehicles schema
-  const getVehicleSchema = async () => {
-    try {
-      const { srcType } = await getSrcType({ srcType: vehicleSourceTypeId });
-      setVehicleSrcType(srcType);
-    } catch (err) {
-      console.error("Failed to fetch vehicle source type schema", err);
-    }
-  };
-
-  getVehicleSchema();
-}, [getSrcType, fetchVehicles]);
-
   // New useEffect to fetch the data on component mount
   useEffect(() => {
       fetchVehicles(vehicleSourceTypeId);
@@ -206,7 +191,7 @@ export function SourceTypes() {
   // Refresh vehicle data every so often
   useEffect(() => {
 
-    const REFRESH_INTERVAL_MS = 100000;
+    const REFRESH_INTERVAL_MS = 1000;
 
     const intervalId = setInterval(async () => {
       console.log("Refreshing vehicle data...", vehicleSourceTypeId);
@@ -253,26 +238,46 @@ export function SourceTypes() {
         <Grid container spacing={3}>
           <Grid item xs={12} md={7}>
             <MapContainer style={{ width: '100%', height: '80vh' }} center={[0, 0]} zoom={3} ref={setMap}>
-              <TileLayer url={config.tileServerUrl} />
-                <LayersControl position="topright">
-                      {filteredVehicleData.length > 0 && (
-                    <LayersControl.Overlay name="Planes" checked>
-                      {/* Vehicle Layer - key forces re-render when entitlements change */}
-                      <VehicleLayer
-                        key={`vehicles-${activeEntitlements.size}`}
-                        vehicleData={filteredVehicleData}
-                        onMarkerClick={handleVehicleClick}
-                        onPopOut={setPoppedOutVehicle}
-                        />
-                    </LayersControl.Overlay>
-                    )}
-                      {/* TDF Object Layer */}
-                      {tdfObjects.length > 0 && (
-                    <LayersControl.Overlay name="TDF Objects" checked>
-                        <TdfObjectsMapLayer tdfObjects={tdfObjects} />
-                    </LayersControl.Overlay>
-                    )}
-                </LayersControl>
+              <LayersControl position="topright">
+                {/* Base Layers */}
+                <LayersControl.BaseLayer checked name="Street">
+                  <TileLayer
+                    url={config.tileServerUrl || "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"}
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  />
+                </LayersControl.BaseLayer>
+                <LayersControl.BaseLayer name="Satellite">
+                  <TileLayer
+                    url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                    attribution='&copy; <a href="https://www.esri.com/">Esri</a> | Earthstar Geographics'
+                  />
+                </LayersControl.BaseLayer>
+                <LayersControl.BaseLayer name="Dark">
+                  <TileLayer
+                    url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
+                  />
+                </LayersControl.BaseLayer>
+
+                {/* Overlay Layers */}
+                {filteredVehicleData.length > 0 && (
+                  <LayersControl.Overlay name="Planes" checked>
+                    {/* Vehicle Layer - key forces re-render when entitlements change */}
+                    <VehicleLayer
+                      key={`vehicles-${activeEntitlements.size}`}
+                      vehicleData={filteredVehicleData}
+                      onMarkerClick={handleVehicleClick}
+                      onPopOut={setPoppedOutVehicle}
+                    />
+                  </LayersControl.Overlay>
+                )}
+                {/* TDF Object Layer */}
+                {tdfObjects.length > 0 && (
+                  <LayersControl.Overlay name="TDF Objects" checked>
+                    <TdfObjectsMapLayer tdfObjects={tdfObjects} />
+                  </LayersControl.Overlay>
+                )}
+              </LayersControl>
             </MapContainer>
           </Grid>
           <Grid item xs={12} md={5}>
@@ -309,7 +314,9 @@ export function SourceTypes() {
               </IconButton>
             </Box>
             <Box sx={{ p: 2, maxHeight: '60vh', overflowY: 'auto', bgcolor: 'background.paper' }}>
-              <SourceTypeProvider srcType={vehicleSrcType}>
+              {/* Need to fix the source type to be what vehcile data will work with. Update to seed.sql.
+              */}
+              <SourceTypeProvider srcType={srcType}>
                 <TdfObjectResult
                   key={poppedOutVehicle.tdfObject.id}
                   tdfObjectResponse={poppedOutVehicle}
@@ -327,4 +334,3 @@ export function SourceTypes() {
     </>
   );
 }
-
