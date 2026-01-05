@@ -462,7 +462,7 @@ VALUES (
       "searchFields":["attrClassification","attrNeedToKnow","attrRelTo"],
       "attrFields":["attrClassification","attrNeedToKnow","attrRelTo"],
       "displayFields": {
-        "header":"vehicleName",
+        "header":"callsign",
         "details":["attrClassification","attrNeedToKnow","attrRelTo","vehicleName","callsign","origin","destination","aircraft_type","speed","altitude","heading"]
       }
     }'

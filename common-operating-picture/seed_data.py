@@ -3,7 +3,7 @@ import uuid
 import json
 import random
 import psycopg2
-import argparse 
+import argparse
 from io import BytesIO
 from faker import Faker
 from datetime import datetime, timedelta
@@ -115,7 +115,6 @@ def generate_tdf_records(count, sdk):
         # 2. Randomize Vehicle Data
         vehicle_data = {
             "vehicleName": f"{fake.lexify('??').upper()}-{fake.numerify('###')}",
-            "callsign": fake.bothify('??-####').upper(),
             "origin": fake.lexify('???').upper(),      # Changed from airport_iata to lexify
             "destination": fake.lexify('???').upper(), # Changed from airport_iata to lexify
             "aircraft_type": random.choice(["Boeing 747", "Airbus A320", "Cessna 172", "F-35", "Global 6000"])
@@ -133,6 +132,7 @@ def generate_tdf_records(count, sdk):
 
         # Prepare metadata JSONB to have dynamic fields
         metadata_jsonb = json.dumps({
+            "callsign": fake.bothify('??-####').upper(),
             "speed": f"{random.randint(0, 900)} km/h",
             "altitude": f"{random.randint(0, 40000)} m",
             "heading": str(random.randint(0, 359))
@@ -215,8 +215,8 @@ if __name__ == "__main__":
     # --- Argparse setup ---
     parser = argparse.ArgumentParser(description="Seed script for TDF objects.")
     parser.add_argument(
-        "--delete", 
-        action="store_true", 
+        "--delete",
+        action="store_true",
         help="Delete existing records matching the FIXED_SRC_TYPE before inserting new ones."
     )
     args = parser.parse_args()
