@@ -1,7 +1,12 @@
 import { AuthUser } from '@/contexts/AuthContext';
-import { AuthProviders, NanoTDFClient, TDF3Client, DecryptSource } from '@opentdf/client';
 import { config } from '@/config';
 import { useAuth } from './useAuth';
+import { AuthProviders, DSP } from '@virtru/dsp-sdk';
+
+type BufferSource = {
+  type: 'buffer';
+  location: Uint8Array;
+};
 
 /** Creates a new instance of an OIDC Auth Provider consumed by the TDF Clients */
 async function createAuthProvider(user: AuthUser | null) {
@@ -23,111 +28,79 @@ async function createAuthProvider(user: AuthUser | null) {
   });
 }
 
-/** Converts a string payload into a the data type expected by the TDF3Client */
-function stringToReadableStream(input: string): ReadableStream<Uint8Array> {
-  // Encode the string into a Uint8Array
-  const encoder = new TextEncoder();
-  const uint8Array = encoder.encode(input);
-
-  // Create a ReadableStream
-  return new ReadableStream<Uint8Array>({
-    start(controller) {
-      // Enqueue the Uint8Array into the stream
-      controller.enqueue(uint8Array);
-      // Close the stream
-      controller.close();
-    },
-  });
+function stringToSource(input: string): BufferSource {
+  return {
+    type: 'buffer',
+    location: new TextEncoder().encode(input),
+  };
 }
 
-/*
+/**
  * This hook exposes two functions:
- * - encrypt: Encrypts a plaintext string as either a ZTDF (TDF3) by default or a NanoTDF if configured
- * - decrypt: Inspects encrypted payload to determine if it is a NanoTDF or TDF3 and decrypts accordingly
+ * - encrypt: Encrypts a plaintext string as either a ZTDF (TDF3) by default or a NanoTDF if configured.
+ * - decrypt: Decrypts an encrypted TDF payload (handles both TDF3 and NanoTDF automatically).
  */
 export function useTDF() {
   const { user } = useAuth();
+  const platformUrl = config.dsp.baseUrl;
+
+  // Initialize unified DSP/OpenTDF client
+  const initializeClient = async () => {
+    const authProvider = await createAuthProvider(user);
+    // New DSP client instance
+    const dsp = new DSP({
+        authProvider,
+        platformUrl: platformUrl,
+        disableDPoP: true,
+    });
+
+    return dsp;
+  };
 
   const encryptNano = async (plaintext: string, attrs: string[]): Promise<ArrayBuffer> => {
-    const client = new NanoTDFClient({
-      authProvider: await createAuthProvider(user),
-      kasEndpoint: config.dsp.kasUrl,
-      dpopEnabled: false,
+    const dsp = await initializeClient();
+    const tdfPayload = await dsp.createNanoTDF({
+      source: stringToSource(plaintext),
+      attributes: attrs,
     });
-    for (const attr of attrs) {
-      client.addAttribute(attr);
-    }
-    return client.encrypt(plaintext);
+    return new Response(tdfPayload).arrayBuffer();
   };
 
   const encryptZTDF = async (plaintext: string, attrs: string[]): Promise<ArrayBuffer> => {
-    const client = new TDF3Client({
-      authProvider: await createAuthProvider(user),
-      kasEndpoint: config.dsp.kasUrl,
-      dpopEnabled: false,
-      allowedKases: [config.dsp.kasUrl],
+    const dsp = await initializeClient();
+    const tdfPayload = await dsp.createZTDF({
+      source: stringToSource(plaintext),
+      attributes: attrs,
     });
-    const readable = await client.encrypt({
-      scope: { attributes: attrs },
-      source: stringToReadableStream(plaintext),
-      offline: true,
-    });
-    return readable.toBuffer();
+
+    return new Response(tdfPayload).arrayBuffer();
   };
 
   const encrypt = async (plaintext: string, attrs: string[]): Promise<ArrayBuffer> => {
     // environment variables end up strings even when defined as boolean in TS
     if (config.formSubmitNanoTdf === 'false' || !config.formSubmitNanoTdf) {
-      console.debug('Encrypting as TDF3...');
+      console.debug('Encrypting as TDF3 using DSP SDK...');
       return encryptZTDF(plaintext, attrs);
     } else {
-      console.debug('Encrypting as NanoTDF...');
+      console.debug('Encrypting as NanoTDF using DSP SDK...');
       return encryptNano(plaintext, attrs);
     }
   };
 
-  const decryptNano = async (ciphertext: ArrayBuffer): Promise<string> => {
-    const client = new NanoTDFClient({
-      authProvider: await createAuthProvider(user),
-      kasEndpoint: config.dsp.kasUrl,
-      dpopEnabled: false,
-    });
-    const buffer = await client.decrypt(ciphertext);
-    return new TextDecoder().decode(buffer);
-  };
-
-  const decryptTdf3 = async (ciphertext: ArrayBuffer): Promise<string> => {
-    const client = new TDF3Client({
-      authProvider: await createAuthProvider(user),
-      kasEndpoint: config.dsp.kasUrl,
-      dpopEnabled: false,
-      allowedKases: [config.dsp.kasUrl],
-    });
-    const buffered: DecryptSource = {
+  const decrypt = async (ciphertext: ArrayBuffer): Promise<string> => {
+    const dsp = await initializeClient();
+    const bufferedSource: BufferSource = {
       type: 'buffer',
       location: new Uint8Array(ciphertext),
     };
-    return (await client.decrypt({ source: buffered })).toString();
-  };
 
-  const decrypt = async (ciphertext: ArrayBuffer): Promise<string> => {
-    // Expected bytes corresponding to Magic Number 'L1L' ASCII characters
-    // For more info, see: https://github.com/opentdf/spec/tree/main/schema/nanotdf#3311-magic-number--version
-    const expectedBytes = new Uint8Array([0x4c, 0x31, 0x4c]);
+    console.debug('Decrypting TDF/NanoTDF using DSP SDK...');
 
-    // Create a Uint8Array view of the buffer
-    const view = new Uint8Array(ciphertext);
+    const stream = await dsp.read({
+      source: bufferedSource,
+    });
 
-    // Check if the first three bytes match the Magic Number
-    for (let i = 0; i < 3; i++) {
-      if (view[i] !== expectedBytes[i]) {
-        console.debug('Detected TDF3 and decrypting...');
-        return decryptTdf3(ciphertext);
-      }
-    }
-
-    console.debug('Detected NanoTDF and decrypting...');
-    return decryptNano(ciphertext);
+    return new Response(stream).text();
   };
 
   return {

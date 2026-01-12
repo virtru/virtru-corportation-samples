@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"log/slog"
+
 	"github.com/spf13/cobra"
 	"github.com/virtru-corp/dsp-cop/api"
 )
@@ -12,6 +14,8 @@ var (
 		Short:   "Start the DSP COP server",
 		Long:    "Start the Virtru Data Security Platform COP server",
 		Run: func(cmd *cobra.Command, args []string) {
+			slog.Info("Starting the DSP COP Server")
+
 			server := api.NewCopServer(cfg, staticDir)
 			server.Start()
 			defer server.Stop()

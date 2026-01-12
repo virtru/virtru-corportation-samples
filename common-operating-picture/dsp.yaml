@@ -4,10 +4,11 @@ issuerEndpoint: &issuerEndpoint https://local-dsp.virtru.com:8443/auth/realms/op
 tokenEndpoint: &tokenEndpoint https://local-dsp.virtru.com:8443/auth/realms/opentdf/protocol/openid-connect/token
 entityResolutionServiceUrl: &entityResolutionServiceUrl https://local-dsp.virtru.com:8080/entityresolution/resolve
 platformEndoint: &platformEndpoint https://local-dsp.virtru.com:8080
-#taggingEndpoint: &taggingEndpoint localhost:9001
+taggingEndpoint: &taggingEndpoint localhost:9001
 mode: all # default mode is all
+
 logger:
-  level: debug
+  level: info
   type: text
   output: stdout
 # DB and Server configurations are defaulted for local development
@@ -26,6 +27,7 @@ services:
     privatesignkey: dsp-keys/policyimportexport/cosign.key
     privatesignkeypassphrasepath: dsp-keys/policyimportexport/cosign.pass
     truststore: dsp-keys/policyimportexport
+
   kas:
     keyring:
       - kid: e1
@@ -82,9 +84,9 @@ services:
     classifyFlotFormat: '[{classification}][//RELTO {relto}][//NTK {needtoknow}]'
     services:
       tagging:
-        enabled: true #true #false #true
+        enabled: false #true
         name: Tagging API
-        #url: *taggingEndpoint
+        url: *taggingEndpoint
   sharepoint:
     serviceHostName: sharepoint
     platformEndpoint: *platformEndpoint
@@ -113,17 +115,16 @@ services:
         # usernameRegex: ^(.*)\\(.*)$
     services:
       tagging:
-        enabled: true #true #false #true
+        enabled: false #true
         name: Tagging API
-        #url: *taggingEndpoint
+        url: *taggingEndpoint
   web-admin:
     enabled: true
     clientId: dsp-web-admin
     issuerEndpoint: *issuerEndpoint
   taggingpdp:
-    #enabled: true #UNTESTED
-    configFilePath: dsp.yaml #"samples/tagging-pdp/fed-config.go.yaml"
-    #tikaServerUrl: "http://localhost:9998" #UNTESTED
+    configFilePath: "dsp.yaml"
+    tikaServerUrl: "http://localhost:9998"
   tdfviewer:
     platform_endpoint: *platformEndpoint
     # Server-side decrypt uses client_id and client_secret
@@ -212,7 +213,7 @@ server:
   cors:
     enabled: true
     # '*' to allow any origin or a specific domain like 'https://yourdomain.com'
-    allowedorigins: 
+    allowedorigins:
       - '*'
     # List of methods. Examples: 'GET,POST,PUT'
     allowedmethods:
@@ -229,6 +230,7 @@ server:
       - Content-Type
       - X-CSRF-Token
       - virtru-ntdf-version
+      - connect-protocol-version
     # List of response headers that browsers are allowed to access
     exposedheaders:
       - Link
@@ -236,4 +238,3 @@ server:
     allowcredentials: true
     # Sets the maximum age (in seconds) of a specific CORS preflight request
     maxage: 3600
-

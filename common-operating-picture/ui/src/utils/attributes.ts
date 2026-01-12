@@ -2,8 +2,201 @@
 // same YAML provisioned into the DSP policy database.
 // @ts-expect-error TS2307 - policy yaml schema is enforced by DSP and should not be defined in frontend
 import { attributes as policy } from '@root/sample.federal_policy.yaml';
+import { IChangeEvent } from '@rjsf/core';
+import { RJSFSchema } from '@rjsf/utils';
+import { ClassificationPriority, extractValues } from '@/contexts/BannerContext';
+import { TdfObjectResponse, TdfNotesResponse } from '@/hooks/useRpcClient';
 
 const namespace = policy[0].namespace;
+
+export const extractAttributeValueFromFqn = (fqn: string): string => {
+    const value = fqn.split('/').pop();
+    return (value || '').toUpperCase();
+};
+
+interface TDFObjectSearchAttributes {
+  attrClassification?: string[];
+  attrNeedtoknow?: string[];
+  attrRelto?: string[];
+}
+
+export const checkObjectEntitlements = (tdfObject: TdfObjectResponse, activeEntitlements: Set<string>): boolean => {
+    // Get the raw attribute data from the object
+    const classification = tdfObject.decryptedData.attrClassification;
+    const needToKnow = tdfObject.decryptedData.attrNeedToKnow || [];
+    const relTo = tdfObject.decryptedData.attrRelTo || [];
+
+    // Process and split attributes into arrays
+    const splitValues = (val: any) => extractValues(val).split(', ').filter(v => v.trim() !== '');
+
+    const objClassification = splitValues(classification);
+    const objNeedToKnows = splitValues(needToKnow);
+    const objRelTo = splitValues(relTo);
+
+    // Prepare user entitlements
+    const trimmedEntitlements = new Set(
+        [...activeEntitlements].map(extractAttributeValueFromFqn)
+    );
+
+    // All of check (Classification & Need To Know)
+    // User must have every single one of these attributes.
+    const allofAttributes = [...objClassification, ...objNeedToKnows];
+    for (const attr of allofAttributes) {
+        if (!trimmedEntitlements.has(attr.toUpperCase())) {
+            return true; // Fail due to missing a required all of attribute
+        }
+    }
+
+    // "any of" check for RelTo
+    // If RelTo attributes exist, the user only needs to match ONE.
+    if (objRelTo.length > 0) {
+        const hasAtLeastOneRelTo = objRelTo.some(rel =>
+            trimmedEntitlements.has(rel.toUpperCase())
+        );
+
+        if (!hasAtLeastOneRelTo) {
+            return true; // Fail if user does not match any of the RelTo values
+        }
+    }
+
+    return false; // Success: All checks passed
+};
+
+export const checkNoteEntitlements = (tdfNote: TdfNotesResponse, activeEntitlements: Set<string>): boolean => {
+
+    let searchAttributes: TDFObjectSearchAttributes = {
+        attrClassification: [],
+        attrNeedtoknow: [],
+        attrRelto: []
+    };
+
+    try {
+        // Parse the JSON string from tdfNote.search
+        searchAttributes = JSON.parse(tdfNote.tdfNote.search || '{}');
+    } catch (e) {
+        console.error("Failed to parse note search attributes for entitlement check:", e);
+        return true;
+    }
+
+    const extractNoteAttr = (attrArray: string[] | undefined): string[] => {
+        if (!attrArray || attrArray.length === 0) return [];
+        return attrArray.map((attrUrl: string) =>
+            attrUrl.split('/').pop()?.toUpperCase() || ''
+        ).filter(v => v.trim() !== '');
+    };
+
+    // Prepare the user's entitlements (normalized to uppercase)
+    const trimmedEntitlements = new Set(
+        [...activeEntitlements].map(extractAttributeValueFromFqn)
+    );
+
+    // Normalize Note Attributes
+    const noteClass = extractNoteAttr(searchAttributes.attrClassification);
+    const noteNTK = extractNoteAttr(searchAttributes.attrNeedtoknow);
+    const noteRelTo = extractNoteAttr(searchAttributes.attrRelto);
+
+    // All of check (Classification & NeedToKnow)
+    // The user must have every single one of these attributes.
+    const allofAttributes = [...noteClass, ...noteNTK];
+    for (const attr of allofAttributes) {
+        if (!trimmedEntitlements.has(attr)) {
+            return true; // Fail due to missing a required all of attribute
+        }
+    }
+
+    // Any of check
+    // If RelTo attributes exist, the user only needs to match ONE.
+    if (noteRelTo.length > 0) {
+        const hasAtLeastOneRelTo = noteRelTo.some(rel => trimmedEntitlements.has(rel));
+
+        if (!hasAtLeastOneRelTo) {
+            // console.log("User does not have any of the required RelTo attributes");
+            return true; // Fail user has none of the specified RelTo values
+        }
+    }
+
+    return false; // Success: All checks passed
+};
+
+// Checks if the user has the required RelTo entitlements. Returns true if the user is missing required RelTo values.
+export const checkRelToEntitlements = (relToAttrs: string[] | undefined, activeEntitlements: Set<string>): boolean => {
+    if (!relToAttrs || relToAttrs.length === 0) return false; // No RelTo attributes means no entitlement check needed
+
+    // Check if the user has any of the RelTo attributes with array check for overlapping elements between relToAttrs and activeEntitlements
+    const hasAtLeastOneRelTo = relToAttrs.some(rel => activeEntitlements.has(rel));
+
+    if (!hasAtLeastOneRelTo) {
+        return true; // Fail if user does not have any of the specified RelTo values
+    }
+
+    return false; // Success: User has at least one of the required RelTo values
+};
+
+// Utility to calculate all subordinate classifications for a selected classification.
+export const getSubordinateClassifications = (selectedClass: string): string[] => {
+    // Look up the priority of the selected class
+    const selectedPriority = ClassificationPriority[selectedClass as keyof typeof ClassificationPriority];
+    if (selectedPriority === undefined) return [];
+
+    // Filter all classifications whose priority is less than or equal to the selected one.
+    return Object.keys(ClassificationPriority).filter(
+        (key) => ClassificationPriority[key as keyof typeof ClassificationPriority] <= selectedPriority
+    );
+};
+
+// Checks form data against user entitlements to find unavailable attributes.
+export const checkAndSetUnavailableAttributes = (
+    data: IChangeEvent<any, RJSFSchema>,
+    attrFields: string[] | undefined,
+    entitlements: Set<string>,
+    setUnavailAttrs: React.Dispatch<React.SetStateAction<string[]>>
+) => {
+    const { formData } = data;
+
+    if (!formData || !attrFields) {
+        setUnavailAttrs([]);
+        return;
+    }
+
+    const pendingUnavailAttrs = Object.entries(formData).reduce((acc: string[], [key, value]) => {
+        if (attrFields.includes(key)) {
+            // Normalize value to an array if it's a single select/string
+            let values = Array.isArray(value) ? value : [value as string];
+
+            if (key === 'attrRelTo') {
+                // Check if the user has any of these values in their entitlements
+                const hasAtLeastOne = values.some(v => entitlements.has(v));
+
+                // If they have none of the values mark the whole set as unavailable
+                if (!hasAtLeastOne && values.length > 0) {
+                    acc.push(...values);
+                }
+            }
+            // All of logic for the rest of the attributes
+            else {
+                values.forEach((v: string) => {
+                    if (v && !entitlements.has(v)) {
+                        acc.push(v);
+                    }
+                });
+            }
+        }
+        return acc;
+    }, []);
+
+    setUnavailAttrs(pendingUnavailAttrs);
+};
+
+// Sets the entitlements state based on the user object from useAuth.
+export const updateEntitlementsFromUser = (
+    user: { entitlements: string[] } | null | undefined,
+    setEntitlements: React.Dispatch<React.SetStateAction<Set<string>>>
+) => {
+    if (user && user.entitlements) {
+        setEntitlements(new Set(user.entitlements));
+    }
+};
+
 
 export function attrFqn(attr: string, value: string) {
   return `https://${namespace}/attr/${attr}/value/${value}`.toLowerCase();
@@ -21,7 +214,7 @@ export function getAttributes(...attrs: Array<string | string[] | undefined>): s
   return flattened;
 }
 
-const reltoMap: {
+export const reltoMap: {
   [attrValue: string]: {
     label: string;
     group?: string;

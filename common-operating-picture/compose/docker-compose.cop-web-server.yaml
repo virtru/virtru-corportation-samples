@@ -1,10 +1,11 @@
 services:
 
   cop-web-server:
-    build: 
+    build:
       context: ../
       dockerfile: ./cop.Dockerfile
     image: virtru-dsp-cop-web-server:dev
+    restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: changeme
@@ -18,7 +19,7 @@ services:
       VITE_DSP_KC_DIRECT_AUTH: false
       VITE_FORM_SUBMIT_NANO_TDF: true
     volumes:
-      - ../config.docker.yaml:/etc/dsp-cop/config.yaml
+      - ../config.yaml:/etc/dsp-cop/config.yaml
       - ../dsp-keys/rootCA.pem:/etc/ssl/certs/ca-certificates.crt
       - ../dsp-keys/local-dsp.virtru.com.pem:/dsp-keys/local-dsp.virtru.com.pem
       - ../dsp-keys/local-dsp.virtru.com.key.pem:/dsp-keys/local-dsp.virtru.com.key.pem
@@ -32,4 +33,5 @@ services:
         condition: service_healthy
         restart: true
     extra_hosts:
-      - "local-dsp.virtru.com:host-gateway" #host and ip
+      - "local-dsp.virtru.com:172.17.0.1" #host and ip
+      #- "host.docker.internal:host-gateway"

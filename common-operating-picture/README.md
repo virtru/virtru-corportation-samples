@@ -23,7 +23,7 @@ Table of Contents
 
 ## Quick Start
 
-This applicaiton can be run in two modes:
+This application can be run in two modes:
 1. `Lite` - Sits on top of an already-deployed DSP stack
    - Follow [lite-deployment.md](./deploy/lite/lite-deployment.md)
 1. `Full` - Deploys a full DSP stack
@@ -63,7 +63,7 @@ and [Configuration](#configuration)).
 The configuration file is mapped in `config.example.yaml` and can be located at specific locations
 scoped to how you are running the application.
 
-1. Project-level: `config.yaml`
+1. Project-level: `/config.docker.yaml/config.docker.yaml`
 2. User-level: `~/.dsp-cop/config.yaml`
 3. System-level: `/etc/dsp-cop/config.yaml`
 
@@ -99,93 +99,195 @@ To demonstrate the capabilities of DSP, there are two root-level files to provis
 
 ### Pre-requisites
 
-1. Copy the config `cp config.example.yaml config.yaml`
-2. Install necessary dependencies(only _one_ docker runtime is needed):
-   1. Container runtime and compose
-      * Docker + Docker Compose
-      * [Colima (recommended)](https://github.com/abiosoft/colima)
-      * [Rancher Desktop](https://rancherdesktop.io)
-      * [Podman Desktop](https://podman-desktop.io)
-   2. [node](https://nodejs.org/en/download/package-manager)
-   3. [golang](https://go.dev/doc/install)
-   4. [geos](https://libgeos.org/usage/install/)
-   5. [make](https://formulae.brew.sh/formula/make)
-3. Map `local-dsp.virtru.com` to `localhost` in your hosts file
+1. **Run the Setup Script**
+To install necessary dependencies automatically, run the provided script:
 
-      To ensure all PEPs can operate we need to map a local domain to the your localhost.
-      In \*nix environments your hosts file is located at `/etc/hosts` and windows is typically `C:\Windows\System32\drivers\etc`.
+   ```bash
+   ./ubuntu_cop_prereqs_cop.sh
 
-      > [!NOTE]
-      > You will probably need to use root permisisons (i.e. `sudo`) to edit your hosts file.
+   # Reboot after running script for some changes to take effect
+   reboot
+   ```
 
-      ```shell
-      127.0.0.1            local-dsp.virtru.com
-      ```
+   <details>
+   <summary><strong>Manual Installation Details (Optional)</strong></summary>
 
-4. Use Mkcert for local development
+   If you prefer to install manually or need to debug, the script handles the following:
 
-      We use `mkcert` to generate certs for local development. This is required for the `local-dsp.virtru.com` domain.
+   - **Container Runtime:** Installs Docker + Docker Compose.
+     - _Alternatives supported:_ [Colima (recommended)](https://github.com/abiosoft/colima), [Rancher Desktop](https://rancherdesktop.io), or [Podman Desktop](https://podman-desktop.io).
+   - **Languages & Tools:**
+     - [Node.js (via nvm)](https://nodejs.org/en/download/package-manager)
+     - [Go (Golang)](https://go.dev/doc/install)
+     - [GEOS](https://libgeos.org/usage/install/)
+     - [Make](https://formulae.brew.sh/formula/make)
+     </details>
+   - **Local DNS Configuration**
+     - Entry added into /etc/hosts
+     - ```text
+       127.0.0.1    local-dsp.virtru.com
+       ```
 
-      ```shell
-      brew install mkcert
-      ```
+---
 
-      Next follow these steps to generate the certs:
+### Step 1: Generate Local Certificates (Mkcert)
 
-      ```shell
-      # Create the keys dir
-      mkdir -p dsp-keys
-      # Install the CA
-      mkcert -install
-      # Generate the certs
-      mkcert -cert-file dsp-keys/local-dsp.virtru.com.pem -key-file dsp-keys/local-dsp.virtru.com.key.pem local-dsp.virtru.com "*.local-dsp.virtru.com" localhost
-      # Generate keys for KAS and PolicyImportExport artifact signing
-      ./.github/scripts/init-temp-keys.sh
-      # OPTIONAL: generate temporary x509 certificates
-      ./.github/scripts/x509-temp-keys.sh
-      ```
+You need SSL certificates for local development.
 
-      > Note: you can use `'make dev-certs'` as a shortcut to generate the development certs
+**Option A: Script Setup**
+Run the key generation script:
 
-5. Copy DSP Docker Images to Local Registry
-
-      DSP images are stored in the `virtru-dsp-bundle` as OCI artifacts. They can be copied to your local registry by using the `dsp copy-images` utility in that same bundle:
-
-      ```bash
-      # Setup a local registry
-      docker run -d --restart=always -p 5000:5000 --name registry registry:2
-      # Copy DSP images into local registry (Run in virtru-dsp-bundle root-level)
-      dsp copy-images --insecure localhost:5000/virtru
-      # Confirm that the images were successfully copied
-      curl -X GET http://localhost:5000/v2/_catalog
-      curl -X GET http://localhost:5000/v2/virtru/data-security-platform/tags/list
-      ```
-
-### Start required services
-
-Create and start containers
-
-```sh
-  docker compose -f docker-compose.all.yaml up
+```bash
+./ubuntu_cop_keys.sh
 ```
 
-This starts the following services:
+**Option B: Make Command**
+** Note: you can use `'make dev-certs'` as a shortcut to generate the development certs **
 
-1. [COP database](./compose/docker-compose.cop-db.yaml)
-2. [Keycloak](./compose/docker-compose.keycloak.yaml)
-3. [Data Security Platform (DSP)](./compose/docker-compose.dsp.yaml)
-   1. Provision keycloak with sample users and clients
-   2. Setup the database
-   3. Start the DSP server
-   4. Load the sample policy
-4. [COP Web Server](./compose/docker-compose.cop-web-server.yaml)
-5. [NiFi](./compose/docker-compose.nifi.yaml) (_disabled by default_)
-   > [!NOTE]
-   > Nifi is resource-intensive, so you should run `colima` with extra resources allocated: `colima start --memory 16 --cpu 6`
-   1. For local docker compose, run the [build_truststore_local.sh](./build_truststore_local.sh)  to build a truststore for use with NiFi and Tagging Services
-   2. Copy the trusted cert for tagging pdp use to it's mounted drive: `cp ./dsp-keys/local-dsp.virtru.com.pem ./nifi/truststore`
-   3. Run with envfile and nifi profile enabled: `docker compose --profile nifi -f docker-compose.all.yaml --env-file=./env/default.env up`
-      * Note that NiFi uses significant resources; ensure your docker env has sufficient resources allocated
+**Currently NonFunctional - Use the script above**
+
+```bash
+# Make command
+make dev-certs
+```
+
+### Step 2: Unpack the Bundle
+
+Unzip the main bundle and unpack the specific DSP tools. Replace `X.X.X`, `<os>`, and `<arch>` with your specific version and system details.
+
+   ```bash
+   # 1. Untar the main bundle
+   mkdir virtru-dsp-bundle && tar -xvf virtru-dsp-bundle-* -C virtru-dsp-bundle/ && cd virtru-dsp-bundle/
+
+   # 2. Unpack DSP Tools
+   tar -xvf tools/dsp/data-security-platform_X.X.X_<os>_<arch>.tar.gz
+      #Example - AMD linux:
+      tar -xvf tools/dsp/data-security-platform_2.7.1_linux_amd64.tar.gz
+
+   # 3. Unpack and setup Helm
+   tar -xvf tools/helm/helm-vX.X.X-<os>-<arch>.tar.gz
+      #Example - AMD linux:
+      tar -xvf tools/helm/helm-v3.15.4-linux-amd64.tar.gz
+   # Then move command into working directory
+   mv <os>-<arch>/helm ./helm
+
+   # 4. Unpack and setup grpcurl
+   tar -xvf tools/grpcurl/grpcurl_X.X.X_<os>_<arch>.tar.gz
+      #Example - AMD linux:
+      tar -xvf tools/grpcurl/grpcurl_1.9.1_linux_x86_64.tar.gz
+
+   # Make Executable
+   chmod +x ./grpcurl
+   ```
+
+### Step 3: Setup Local Docker Registry
+
+The DSP images are stored in the bundle as OCI artifacts. You must spin up a local registry and copy the images into it.
+
+   ```bash
+   # 1. Start a local registry instance
+   docker run -d --restart=always -p 5000:5000 --name registry registry:2
+
+   # 2. Copy DSP images into local registry
+   # (Run this from the virtru-dsp-bundle root directory)
+   ./dsp copy-images --insecure localhost:5000/virtru
+
+   # 3. Verify images were copied successfully
+   curl -X GET http://localhost:5000/v2/_catalog
+   curl -X GET http://localhost:5000/v2/virtru/data-security-platform/tags/list
+   ```
+
+### Step 4: Build and Run
+
+Use Docker Compose to build and start the environment.
+
+**Start the environment:**
+
+```bash
+docker compose --env-file env/default.env -f docker-compose.dev.yaml up --build --force-recreate
+```
+   This starts the following services:
+
+   1. [COP database](./compose/docker-compose.cop-db.yaml)
+   2. [Keycloak](./compose/docker-compose.keycloak.yaml)
+   3. [Data Security Platform (DSP)](./compose/docker-compose.dsp.yaml)
+      1. Provision keycloak with sample users and clients
+      2. Setup the database
+      3. Start the DSP server
+      4. Load the sample policy
+   4. [COP Web Server](./compose/docker-compose.cop-web-server.yaml)
+   5. [NiFi](./compose/docker-compose.nifi.yaml) (_disabled by default_)
+      > [!NOTE]
+      > Nifi is resource-intensive, so you should run `colima` with extra resources allocated: `colima start --memory 16 --cpu 6`
+      1. For local docker compose, run the [build_truststore_local.sh](./build_truststore_local.sh)  to build a truststore for use with NiFi and Tagging Services
+      2. Copy the trusted cert for tagging pdp use to it's mounted drive: `cp ./dsp-keys/local-dsp.virtru.com.pem ./nifi/truststore`
+      3. Run with envfile and nifi profile enabled: `docker compose --profile nifi -f docker-compose.all.yaml --env-file=./env/default.env up`
+         * Note that NiFi uses significant resources; ensure your docker env has sufficient resources allocated
+
+Local COP Application URL: https://local-dsp.virtru.com:5001/
+
+**Stop the environment:**
+
+The following will stop the enviroment and COP application. Crtl + c in the terminal will also stop the containers however it is recommended
+to also run the following down command as it will cleanup the container remnants.
+
+```bash
+docker compose --env-file env/default.env -f docker-compose.dev.yaml down
+```
+
+---
+
+### Step 5. Seeding Vehicle Data and Live Data Flow Simulation
+
+Following the successful building of COP:
+
+   ```bash
+   # Install the venv module
+   sudo apt install python3-venv -y
+
+   # Create a virtual environment named 'COP_venv' in the current directory
+   python3 -m venv COP_venv
+   ```
+
+   ```bash
+   # Activate the virtual environment.
+   # Your shell prompt will change to indicate it's active.
+   source COP_venv/bin/activate
+   ```
+
+   ```bash
+   # Pip install all required package from requirements.txt
+   pip install -r requirements.txt
+   ```
+
+   ```bash
+   # Run seeding script to populate database
+   # 50 is the standard number of objects that the script will inset but is configurable via NUM_RECORDS variable
+   python3 seed_data.py
+   ```
+
+   ```bash
+   # Start simulation
+   # NUM_ENTITIES will determine how many moving entities the script will query the database for and apply movement logic to
+   # UPDATE_INTERVAL_SECONDS determins the frequency of movement for each object
+   # BOUNDING_BOX_PARAMS define the area for the OpenSky query for live planes (smaller box results in less credits used on init).
+
+   # For live data from OpenSky Network login to https://opensky-network.org/, download credentials file (credentials.json),
+   # place the file in the base director (where the sim_data.py script is located) and then run:
+   python3 sim_data.py
+
+   # For a fake simulation that does not require the credentials file or use account credits with OpenSky run this script
+   # for simulated movement:
+   python3 sim_data_fake_opensky.py
+   ```
+
+### Troubleshooting & Verification Checklist
+
+If you encounter issues, double-check the following:
+
+- **dsp.yaml:** Ensure this file exists in your working directory.
+- **rootCA.cert:** Ensure the root CA certificate was copied correctly during the setup.
+- **Permissions:** Verify that the certificates in `dsp-keys` have `chmod 755` permissions.
 
 ### Run the COP Server Locally
 
@@ -229,7 +331,7 @@ See the [ui README](/ui/README.md) for more information on the frontend developm
 
 DSP-COP supports two authentication flows:
 1. Username/Password (default)
-   - user enters credentials into application form, application initiates token request 
+   - user enters credentials into application form, application initiates token request
 2. Keycloak Authentication (PKI/x509 or username/password)
    - Application redirects user to Keycloak for authentication, keycloak returns a token
 
@@ -318,7 +420,7 @@ dsp tructl --with-client-creds '{"clientId":"opentdf","clientSecret":"secret"}' 
 * Possible to zoom out the map and see countries multiple times with only single pins rendered
 * Autocomplete in form UI is unintuitive
 * When searching, no UI validation of start and end date/time
-   * start date is required 
+   * start date is required
    * start date must be before end date
 * URL search params are not cleared when swithing between source types, resulting in unrelated params breaking search
 * Source Type is NULLable and should be required

@@ -7,6 +7,8 @@ import { formatDateTime } from '@/utils/format';
 import { mapColors, mapIcons, mapStringToColor, mapStringToSvgPath } from '@/pages/SourceTypes/helpers/markers';
 import { propertyOf } from 'lodash';
 import ms from 'milsymbol';
+import { ObjectBanner } from '@/components/ObjectBanner';
+import { extractValues } from '@/contexts/BannerContext';
 
 type Props = {
   tdfObjects: TdfObjectResponse[];
@@ -32,19 +34,22 @@ export function MarkerLayer({ tdfObjects = [], isCluster = false, layerName = 'u
 
   const renderHeader = (o: TdfObjectResponse) => {
     let formattedDateTime = 'Time Not Recorded';
-    
+
     if (o.tdfObject.ts) {
       formattedDateTime = formatDateTime(o.tdfObject.ts.toDate().toISOString());
     }
-  
+
     const value = propertyOf(o.decryptedData)(displayFields?.header || 'id');
+    const displayValue = (typeof value === 'object' && value !== null)
+      ? (value.country || value.name || "Object")
+      : value;
 
     return (
-      <Stack direction="column" gap={0} spacing={0} mb={2}>
-        <Typography variant="h6" sx={{ wordBreak: 'break-all' }}>
-          {getFieldTitle(displayFields?.header)}: {value}
+      <Stack direction="column" gap={0} spacing={0} mb={1} sx={{ minWidth: '350px' }}>
+        <Typography variant="h6" sx={{ wordBreak: 'break-word', lineHeight: 1.2 }}>
+          {getFieldTitle(displayFields?.header)}: {displayValue}
         </Typography>
-        <Typography variant="body1" sx={{ color: '#000' }}>
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
           {formattedDateTime}
         </Typography>
       </Stack>
@@ -55,7 +60,11 @@ export function MarkerLayer({ tdfObjects = [], isCluster = false, layerName = 'u
     const oa = propertyOf(o.decryptedData);
 
     const details = (displayFields?.details || []).map(field => {
-      const value = oa(field);
+      let value = oa(field);
+
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+      value = value.country || value.name || JSON.stringify(value);
+      }
 
       return (
         <Box key={`${o.tdfObject.id}-${field}-details`} sx={{ wordBreak: 'break-all' }}>
@@ -63,13 +72,11 @@ export function MarkerLayer({ tdfObjects = [], isCluster = false, layerName = 'u
         </Box>
       );
     });
-    
     return details;
   };
 
   const tdfObjectToDynamicIcon = (tdfObject: TdfObjectResponse) => {
     const oa = propertyOf(tdfObject.decryptedData);
-    
     let iconSvgPath = '';
     let iconColor = '';
 
@@ -93,7 +100,6 @@ export function MarkerLayer({ tdfObjects = [], isCluster = false, layerName = 'u
 
         // what is the value of that field from the data object?
         let objectConfigValueIcon = oa(iconConfigField);
-        
         // Handle for type Array (ie: attrNeedToKnow, attrRelTo)
         if (Array.isArray(objectConfigValueIcon)) {
           // fixme: currently using the first index
@@ -102,10 +108,10 @@ export function MarkerLayer({ tdfObjects = [], isCluster = false, layerName = 'u
 
         // Map the value to the valueMap if there is a matching key, else return self
         objectConfigValueIcon = iconConfigValueMap[objectConfigValueIcon] || objectConfigValueIcon;
-        
+
         // Go to the next iconConfig if the data is null or empty string
         if(!objectConfigValueIcon || objectConfigValueIcon == '') continue;
-        
+
         // If valueMap contains a isMilSymbol key and the value is "true", create MilSymbol
         if(!!iconConfigValueMap.isMilSymbol && iconConfigValueMap.isMilSymbol.toLowerCase() === 'true'){
           return renderMilSymbolIcon(objectConfigValueIcon);
@@ -126,10 +132,10 @@ export function MarkerLayer({ tdfObjects = [], isCluster = false, layerName = 'u
     } else {
       // which field drives the color?
       const iconColorField = mapFields.colorConfig[0].field;
-    
+
       // what is the value of that field from the data object?
       let objectConfigValueColor = oa(iconColorField);
-      
+
       // Handle for type Array (ie: attrNeedToKnow, attrRelTo)
       if (Array.isArray(objectConfigValueColor)) {
         // fixme: currently using the first index
@@ -182,14 +188,13 @@ export function MarkerLayer({ tdfObjects = [], isCluster = false, layerName = 'u
     if (ctx) {
       ctx.scale(dpi, dpi);
       // NOTE: iconColor can be a string or hex code: '#3898ec' or 'blue'
-      ctx.fillStyle = iconColor; 
-      const path = new Path2D(iconSvgPath); 
+      ctx.fillStyle = iconColor;
+      const path = new Path2D(iconSvgPath);
       ctx.fill(path);
     }
     else {
       console.error('Error creating icon');
     }
-  
     return L.icon({
       iconUrl: canvas.toDataURL(),
       iconSize: [size, size],
@@ -202,11 +207,35 @@ export function MarkerLayer({ tdfObjects = [], isCluster = false, layerName = 'u
       const coordinates = JSON.parse(tdfObject.tdfObject.geo).coordinates;
       const dynamicTdfIcon = tdfObjectToDynamicIcon(tdfObject);
 
+      const data = tdfObject.decryptedData || {};
+
+      const objClass = extractValues(data.attrClassification || [])
+        .split(', ')
+        .filter(Boolean);
+
+      const objNTK = extractValues(data.attrNeedtoknow || data.attrNeedToKnow || [])
+        .split(', ')
+        .filter(Boolean);
+
+      const objRel = extractValues(data.attrRelto || data.attrRelTo || [])
+        .split(', ')
+        .filter(Boolean);
+
       return (
         <Marker position={{ lat: coordinates[1], lng: coordinates[0] }} key={tdfObject.tdfObject.id} icon={dynamicTdfIcon}>
-          <Popup>
-            {renderHeader(tdfObject)}
-            {renderDetails(tdfObject)}
+          <Popup minWidth={380} maxWidth={500}>
+            <Box sx={{ p: 1, display: 'block', width: '100%', overflow: 'hidden' }}>
+              <ObjectBanner
+                objClassification={objClass.length > 0 ? objClass : ['UNCLASSIFIED']}
+                objNTK={objNTK}
+                objRel={objRel}
+                notes={[]}
+              />
+              {renderHeader(tdfObject)}
+              <Box sx={{ mt: 1 }}>
+              {renderDetails(tdfObject)}
+              </Box>
+            </Box>
           </Popup>
         </Marker>
       );

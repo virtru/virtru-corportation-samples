@@ -3,3 +3,259 @@
 .leaflet-popup-content p {
   margin: 0;
 }
+
+/* ===== NEED TO MOVE THESE VEHICLE RELATED CSS TO ITS OWN FILE ===== */
+.leaflet-tooltip.custom-compact-tooltip {
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.4) !important;
+    background: #fff !important;
+}
+
+.leaflet-tooltip-pane .leaflet-tooltip-content {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #fff !important;
+}
+
+.custom-compact-tooltip {
+  padding: 0 !important;
+  background: #fff !important;
+  border: none !important;
+  box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.15) !important;
+}
+
+.leaflet-popup-content-wrapper {
+  padding: 0 !important;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  width: auto !important;
+  display: block;
+}
+
+/* Adjusting the tip (triangle) at the bottom */
+.leaflet-popup-tip-container {
+  margin-top: -1px;
+}
+
+/* ===== TOOLTIP CONTAINER ===== */
+.tooltip-container {
+  min-width: 280px;
+  max-width: 320px;
+  padding: 10px;
+  background-color: #f7f7f7 !important;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+/* ===== HEADER SECTION ===== */
+.tooltip-header {
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #1976d2;
+}
+
+.vehicle-name {
+  color: #1976d2;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.callsign-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.callsign-label {
+  color: #666;
+  font-weight: 600;
+}
+
+.callsign-value {
+  color: #000;
+  font-weight: 700;
+  background-color: rgba(0, 0, 0, 0.04);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* ===== SECTION STYLES ===== */
+.tooltip-section {
+  margin-bottom: 12px;
+}
+
+.tooltip-section:last-child {
+  margin-bottom: 0;
+}
+
+.section-title {
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #1976d2;
+}
+
+/* ===== TELEMETRY GRID ===== */
+.telemetry-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.speed-gauge-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.telemetry-details-column {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ===== SPEED GAUGE ===== */
+.speed-gauge-container {
+  position: relative;
+  display: inline-flex;
+}
+
+.speed-gauge-bg {
+  color: rgba(0, 0, 0, 0.2);
+  position: absolute;
+}
+
+.speed-gauge-progress {
+  position: relative;
+}
+
+.speed-gauge-progress.speed-high {
+  color: #d32f2f;
+}
+
+.speed-gauge-progress.speed-medium {
+  color: #ed6c02;
+}
+
+.speed-gauge-progress.speed-low {
+  color: #2e7d32;
+}
+
+.speed-gauge-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.speed-value {
+  font-weight: bold;
+  line-height: 1;
+}
+
+.speed-unit {
+  font-size: 0.65rem;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.speed-gauge-na {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+/* ===== DETAIL ITEMS ===== */
+.detail-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  background-color: rgba(0, 0, 0, 0.04);
+  transition: background-color 0.2s;
+}
+
+.detail-item:hover {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+.detail-item:last-child {
+  margin-bottom: 0;
+}
+
+.detail-icon {
+  margin-right: 8px;
+  font-size: 1.1rem;
+  color: #000;
+}
+
+.detail-label {
+  font-weight: 600;
+  margin-right: 4px;
+  color: #666;
+}
+
+.detail-value {
+  font-weight: 500;
+}
+
+/* Container for the "window" that pops out */
+.popped-out-window {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 400px;
+  background: white;
+  z-index: 2000; /* Higher than Leaflet */
+  box-shadow: 0px 10px 30px rgba(0,0,0,0.3);
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.3s ease-out;
+}
+
+.window-header {
+  background: #f5f5f5;
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #ffffff;
+  border-radius: 8px 8px 0 0;
+  cursor: move; /* Aesthetic only unless you add drag logic */
+}
+
+@keyframes slideIn {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Customizing the Leaflet Popup to look cleaner */
+.custom-vehicle-popup .leaflet-popup-content-wrapper {
+  padding: 0;
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+.custom-vehicle-popup .leaflet-popup-content {
+  margin: 0;
+  width: 300px !important;
+}
