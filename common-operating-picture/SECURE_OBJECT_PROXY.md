@@ -17,6 +17,55 @@ Add s4/localstack hosts to /etc/hosts:
  echo "127.0.0.1  localstack.virtru.com" | sudo tee -a /etc/hosts
 ```
 
+## Using Minio MC CLI
+Use Minio CLI to interact with the Secure Object Proxy
+
+Install Minio mc
+```shell
+brew install minio/stable/mc
+```
+
+Add an alias for the Secure Object Proxy
+```shell
+mc alias set s4 http://s4-test-1.localhost:7070 "user" "replaceme" --api "S3v4" --path "on"
+```
+
+Get Bearer Token
+```shell
+AUTH_TOKEN=$(curl -d 'client_id=opentdf' -d 'client_secret=secret' -d 'grant_type=client_credentials' \
+    'http://keycloak.virtru.internal:8888/auth/realms/opentdf/protocol/openid-connect/token' | jq -r .access_token)
+```
+
+List Buckets:
+```shell
+mc -H "Authorization: Bearer ${AUTH_TOKEN}" ls s4
+```
+
+Sample Put Object, explicitly specifying data attributes. Note: Write input and `^D` twice to end input.
+```shell
+echo "sample" > data/sample.txt
+
+mc -H "Authorization: Bearer ${AUTH_TOKEN}" put \
+    data/sample.txt  \
+    --attr "Tdf-Data-Attribute-0=https://example.com/attr/attr1/value/value1;Tdf-Data-Attribute-1=https://example.com/attr/attr1/value/value2" \
+    s4/test-bucket
+```
+
+Sample Copy Object, explicitly specifying data attributes. Note: Write input and `^D` twice to end input.
+```shell
+echo "sample" > data/sample.txt
+
+mc -H "Authorization: Bearer ${AUTH_TOKEN}" cp \
+  --attr "Tdf-Data-Attribute-0=https://example.com/attr/attr1/value/value1;Tdf-Data-Attribute-1=https://example.com/attr/attr1/value/value2" \
+  data/sample.txt s4/test-bucket
+```
+
+Sample Get Object.
+```shell
+mc -H "Authorization: Bearer ${AUTH_TOKEN}" cat s4/test-bucket/sample.txt
+```
+
+
 # Example React Code
 
 ## Authentication
