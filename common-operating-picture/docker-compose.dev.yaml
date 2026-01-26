@@ -106,3 +106,21 @@ services:
     extends:
       file: ./compose/docker-compose.tagging.yaml
       service: tagging
+
+#================================================================
+# Start LocalStack for local AWS S3 emulation
+#----------------------------------------------------------------
+  localstack:
+    profiles: [s4]
+    extends:
+      file: ./compose/docker-compose.localstack.yaml
+      service: localstack
+
+#================================================================
+# Start Secure Object Proxy Service (S4) proxy
+#----------------------------------------------------------------
+  s4:
+    profiles: [s4]
+    extends:
+      file: ./compose/docker-compose.secure-object-proxy.yaml
+      service: s4

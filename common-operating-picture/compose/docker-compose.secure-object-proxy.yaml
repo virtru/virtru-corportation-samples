@@ -1,0 +1,21 @@
+services:
+  s4:
+    image: ${S4_IMAGE:-localhost:5000/virtru/s4proxy:v1.6.0}
+    restart: always
+    command: ["start","-f","/app/config.yaml"]
+    ports:
+      - ${S4_PORT:-7070}:7070
+    volumes:
+      - ./s4-dev-localstack.yaml:/app/config.yaml
+    extra_hosts:
+      - "${KEYCLOAK_HOSTNAME:-keycloak.virtru.com}:host-gateway"
+      - "${PLATFORM_HOSTNAME:-local-dsp.virtru.com}:host-gateway"
+      - "${LOCALSTACK_HOSTNAME:-localstack.virtru.com}:host-gateway" 
+    # network_mode: host
+    environment:
+      - SSL_CERT_DIR=../dsp-keys
+      - S4PROXY_BACKEND_CLIENTSECRET=${S4_CLIENT_SECRET:-secret}
+      - S4PROXY_BACKEND_CLIENTID=${S4_CLIENT_ID:-opentdf-sdk}
+      - S4PROXY_AUTH_STS_CLIENTSECRET=${S4_CLIENT_SECRET:-secret}
+      - S4PROXY_AUTH_STS_CLIENTID=${S4_CLIENT_ID:-opentdf-sdk}
+      - S4PROXY_AUTH_ISSUER=https://${KEYCLOAK_HOSTNAME:-keycloak.virtru.com}:8443/auth/realms/opentdf
