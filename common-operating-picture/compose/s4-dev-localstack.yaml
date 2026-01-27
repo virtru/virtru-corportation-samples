@@ -24,13 +24,14 @@ backend:
   provider:
     s4-test:
       type: s3
-      endpoint: https://localstack.virtru.com:4566
+      endpoint: http://localstack:4566
       region: us-east-1
       credentials:
         type: static
         config:
           accessKey: test
           secretKey: test
+      usePathStyle: true
   default: s4-test
   multipartUploadMaxPartitionSizeMB: 25
   maxConcurrentWorkers: 20

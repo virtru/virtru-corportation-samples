@@ -15,7 +15,9 @@ services:
     extra_hosts:
       # - "${KEYCLOAK_HOSTNAME:-local-dsp.virtru.com}:host-gateway"
       - "${PLATFORM_HOSTNAME:-local-dsp.virtru.com}:host-gateway"
-      - "${LOCALSTACK_HOSTNAME:-localstack.virtru.com}:host-gateway" 
+      - "${LOCALSTACK_HOSTNAME:-local-s4.virtru.com}:host-gateway" 
+      - "cop-demo.${LOCALSTACK_HOSTNAME:-local-s4.virtru.com}:host-gateway" 
+
     # network_mode: host
     environment:
       - SSL_CERT_DIR=/app/certs
