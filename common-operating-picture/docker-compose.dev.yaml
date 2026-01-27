@@ -36,13 +36,13 @@ services:
       file: ./compose/docker-compose.cop-db.yaml
       service: cop-db-setup
 
-#================================================================
-# Start the COP web server (go process + react app)
-#----------------------------------------------------------------
-  cop-web-server:
-    extends:
-      file: ./compose/docker-compose.cop-web-server.yaml
-      service: cop-web-server
+# #================================================================
+# # Start the COP web server (go process + react app)
+# #----------------------------------------------------------------
+#   cop-web-server:
+#     extends:
+#       file: ./compose/docker-compose.cop-web-server.yaml
+#       service: cop-web-server
       
 #================================================================
 # Start Keycloak
@@ -111,16 +111,27 @@ services:
 # Start LocalStack for local AWS S3 emulation
 #----------------------------------------------------------------
   localstack:
-    profiles: [s4]
     extends:
       file: ./compose/docker-compose.localstack.yaml
       service: localstack
 
 #================================================================
+# Start Minio for local AWS S3 emulation
+#----------------------------------------------------------------
+  minio:
+    extends:
+      file: ./compose/docker-compose.minio.yaml
+      service: minio      
+
+  minio-createbuckets:
+    extends:
+      file: ./compose/docker-compose.minio.yaml
+      service: minio-createbuckets
+
+#================================================================
 # Start Secure Object Proxy Service (S4) proxy
 #----------------------------------------------------------------
   s4:
-    profiles: [s4]
     extends:
       file: ./compose/docker-compose.secure-object-proxy.yaml
       service: s4
