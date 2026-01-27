@@ -22,7 +22,7 @@ services:
     environment:
       - SSL_CERT_DIR=/app/certs
       - S4PROXY_BACKEND_CLIENTSECRET=${S4_CLIENT_SECRET:-secret}
-      - S4PROXY_BACKEND_CLIENTID=${S4_CLIENT_ID:-opentdf-sdk}
+      - S4PROXY_BACKEND_CLIENTID=${S4_CLIENT_ID:-secure-object-proxy}
       - S4PROXY_AUTH_STS_CLIENTSECRET=${S4_CLIENT_SECRET:-secret}
-      - S4PROXY_AUTH_STS_CLIENTID=${S4_CLIENT_ID:-opentdf-sdk}
+      - S4PROXY_AUTH_STS_CLIENTID=${S4_CLIENT_ID:-secure-object-proxy}
       - S4PROXY_AUTH_ISSUER=https://${KEYCLOAK_HOSTNAME:-local-dsp.virtru.com}:8443/auth/realms/opentdf

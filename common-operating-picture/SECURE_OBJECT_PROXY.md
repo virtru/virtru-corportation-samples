@@ -13,7 +13,6 @@ Add s4/localstack hosts to /etc/hosts:
 
  ```
  echo "127.0.0.1  local-s4.virtru.com" | sudo tee -a /etc/hosts
- echo "127.0.0.1  *.local-s4.virtru.com" | sudo tee -a /etc/hosts
  echo "127.0.0.1  s4-test.local-s4.virtru.com" | sudo tee -a /etc/hosts
 ```
 
